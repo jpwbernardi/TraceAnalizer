@@ -2,12 +2,12 @@
 
 After compiling the code, use the following command to make the tool calculates the mobility metrics:
 
-./TraceAnalyzer <NS2-TRACE-FILE> <NODE-PAUSE-TIME> <RANGE> <WIDTH> <LENGTH>
+./TraceAnalyzer &lt;NS2-TRACE-FILE&gt; &lt;NODE-PAUSE-TIME&gt; &lt;RANGE&gt; &lt;WIDTH&gt; &lt;LENGTH&gt;
 
 Where:
 
-<NS2-TRACE-FILE> 	: The ns-2 trace file format.
-<NODE-PAUSE-TIME> 	: The average node pause time. This value is employed for computing the IDSD metric.
-<RANGE> 		: The node transmission range.
-<WIDTH> 		: The width of the simulation scenario (in meters). This info is employed only for computing the DNP metric.
-<LENGTH>		: The length of the simulation scenario (in meters). This info is employed only for computing the DNP metric.
+&lt;NS2-TRACE-FILE&gt; 	    : The ns-2 trace file format.
+&lt;NODE-PAUSE-TIME&gt; 	: The average node pause time. This value is employed for computing the IDSD metric.
+&lt;RANGE&gt;        		: The node transmission range.
+&lt;WIDTH&gt; 		        : The width of the simulation scenario (in meters). This info is employed only for computing the DNP metric.
+&lt;LENGTH&gt;       		: The length of the simulation scenario (in meters). This info is employed only for computing the DNP metric.
