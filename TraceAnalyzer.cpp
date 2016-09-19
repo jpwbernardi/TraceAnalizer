@@ -137,8 +137,7 @@ int main(int argc, char* argv[])
 	char mobilityModel[150];
 	int i;
 
-	if(argc < 6)
-	{
+	if(argc < 6) {
 		printf("Missing arguments!\t");
 		exit(0);
 	}
@@ -152,26 +151,33 @@ int main(int argc, char* argv[])
 
 
 	trace = new struct data* [NODE_NUM];
-	for(i=0;i<NODE_NUM;i++)
-		trace[i]=new struct data[TIME_SLOT];
+	for(i = 0; i < NODE_NUM; i++)
+		trace[i] = new struct data[TIME_SLOT];
 
 	mytrace.initiate();
 	mytrace.read_trace(name);
 	mytrace.set_data();
 
+	//LINK-BASED METRICS
 	char link_distribution[] = "link_distribution.txt";
 	mytrace.cal_link(link_distribution);
-	printf("LC=%d\t",mytrace.total_link_change);
-	printf("LD=%f\t",mytrace.avg_link_duration);
+	printf("LC=%d\t",mytrace.total_link_change); //Number of link changes
+	printf("LD=%f\t",mytrace.avg_link_duration); //Link duration
+
+	//GRAPH-BASED METRICS
 	char node_degree_dist[] = "node_degree_dist.txt";
 	mytrace.cal_node_degree(node_degree_dist);
-	printf("ND=%f\t",mytrace.node_degree);
+	printf("ND=%f\t",mytrace.node_degree); //Node Degree
+
+	//Why is doing it again?
 	mytrace.cal_link(link_distribution);
 
+	//Calling it twice. Once here and other in prints
 	mytrace.degree_of_spatial_dependence();
 	mytrace.improved_degree_of_spatial_dependence();
 	mytrace.high_improved_degree_of_spatial_dependence();
 
+	//DISTANCE-BASED METRICS
 	printf("RS=%f\t",mytrace.average_relative_speed()); //Relative Speed
 	printf("DSD=%f\t",mytrace.degree_of_spatial_dependence()); //Degree of Spatial Dependence
 	printf("DTD=%f\t",mytrace.degree_of_temporal_dependence()); //Degree of Temporal Dependence
@@ -188,4 +194,3 @@ int main(int argc, char* argv[])
 
 
  }
-

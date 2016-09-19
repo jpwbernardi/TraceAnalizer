@@ -217,180 +217,146 @@ class Trace
 
 //Membership Function
 
-void Trace::initiate()
-{
-	int i,j,t;
+void Trace::initiate() {
+	int i, j, t;
 
-	total_link_change=0;
+	total_link_change = 0;
 
-	for(i=0;i<NODE_NUM;i++)
-		for(j=0;j<NODE_NUM;j++)
-		{
-			link_status[i][j]=-1;
-			link_up_num[i][j]=0; link_down_num[i][j]=0;
-			last_up_time[i][j]=-1; last_down_time[i][j]=-1;
+	for (i = 0; i < NODE_NUM; i++)
+		for (j = 0; j < NODE_NUM; j++) {
+			link_status[i][j] = -1;
+			link_up_num[i][j] = 0; link_down_num[i][j] = 0;
+			last_up_time[i][j] = -1; last_down_time[i][j] = -1;
 
 			//average and std of distances between nodes
 			average_distances[i][j] = 0.0;
 			std_distances[i][j] = 0.0;
 			//correlations and distances historic
-			for (t=0; t<TIME_SLOT; t++) {
-				DSD[i][j][t]=0.0;
-				estimatedIDSD[i][j][t]=0.0;
-				estimatedHIDSD[i][j][t]=0.0;
-				temporalCorrelations[i][t]=0.0;
-				distances[i][j][t]=0.0;
+			for (t = 0; t < TIME_SLOT; t++) {
+				DSD[i][j][t] = 0.0;
+				estimatedIDSD[i][j][t] = 0.0;
+				estimatedHIDSD[i][j][t] = 0.0;
+				temporalCorrelations[i][t] = 0.0;
+				distances[i][j][t] = 0.0;
 			}
 		}
-	for(i=0;i<TIME_SLOT+1;i++)
-		ld_pdf[i]=0;
+	for (i = 0;i < TIME_SLOT + 1; i++)
+		ld_pdf[i] = 0;
 
 	setAngleSpeedArrays();
 }
 
 
-void Trace::setAngleSpeedArrays(){
-
+void Trace::setAngleSpeedArrays() {
+	int id, k;
 	//change the default array value (0 to NIL), since 0 has a meaning for both speed and angle.
-	for (int id = 0; id < NODE_NUM; ++id) {
-		for (int k = 0; k < NODE_ANGLE_SLOT; ++k) {
+	for (id = 0; id < NODE_NUM; ++id) {
+		for (k = 0; k < NODE_ANGLE_SLOT; ++k)
 			nodeAngles[id][k] = NIL;
-		}
-		for (int k = 0; k < NODE_SPEED_SLOT; ++k) {
+		for (k = 0; k < NODE_SPEED_SLOT; ++k)
 			nodeSpeeds[id][k] = NIL;
-		}
-		for (int k = 0; k < NODE_TRIP_LENGTH_SLOT; ++k) {
+		for (k = 0; k < NODE_TRIP_LENGTH_SLOT; ++k)
 			nodeTripLengths[id][k] = NIL;
-		}
-		for (int k = 0; k < NODE_PATH_LENGTH_SLOT; ++k) {
+		for (k = 0; k < NODE_PATH_LENGTH_SLOT; ++k)
 			nodePathLengths[id][k] = NIL;
-		}
 	}
 
-	for (int k = 0; k < NODES_ANGLE_SLOT; ++k) {
+	for (k = 0; k < NODES_ANGLE_SLOT; ++k)
 		nodesAngles[k] = NIL;
-	}
-
-
-	for (int k = 0; k < NODES_SPEED_SLOT; ++k) {
+	for (k = 0; k < NODES_SPEED_SLOT; ++k)
 		nodesSpeeds[k] = NIL;
-	}
-
-	for (int k = 0; k < NODES_TRIP_LENGTH_SLOT; ++k) {
+	for (k = 0; k < NODES_TRIP_LENGTH_SLOT; ++k)
 		nodesTripLengths[k] = NIL;
-	}
-
-	for (int k = 0; k < NODES_PATH_LENGTH_SLOT; ++k) {
+	for (k = 0; k < NODES_PATH_LENGTH_SLOT; ++k)
 		nodesPathLengths[k] = NIL;
-	}
-
 }
 
 
-void Trace::read_trace(char *filename)
-{
+void Trace::read_trace(char *filename) {
 	FILE *trace_fp;
-	int i=0;
+	int id = 0, t = 0, i = 0;
 
-	char word[20],sentence[100],temp,c0,c1;
-	int id = 0;
-	int t = 0;
-	double time,x,y,speed;
-	double x0,y0,z0;
+	char word[20], sentence[100], temp, c0, c1;
+	double time, x, y, speed;
+	double x0, y0, z0;
 
 	trace_fp = fopen(filename,"r");
-	if(trace_fp == NULL){
-		printf("CANNOT find TRACE file:%s!\n",filename);
+	if (trace_fp == NULL){
+		printf("CANNOT find TRACE file: %s!\n",filename);
 		exit(0);
 	}
 
-
-	while(!feof(trace_fp))
-	{
-
-		temp=fgetc(trace_fp);
-		if(temp=='#')	//if the comment is '#', skip it
-		{	if(fgets(sentence,100,trace_fp)==NULL)
+	while (!feof(trace_fp)) {
+		temp = fgetc(trace_fp);
+		if (temp=='#') {	//if the comment is '#', skip it
+			if (fgets(sentence,100,trace_fp) == NULL)
 				printf("Wrong format for # comment!\n");
-		}
-		else if(temp=='$')	//if not comment, analyze it
-		{	//Check the two initial letters
-			c0=fgetc(trace_fp);c1=fgetc(trace_fp);
-			// $node(i) set X_ 26.523097872900
-			if(c0=='n' && c1=='o')
-			{
-				for(i=0;i<4;i++)
-					temp=fgetc(trace_fp);
-				fscanf(trace_fp,"%d",&id);
-				temp=fgetc(trace_fp);
-				fscanf(trace_fp,"%s",word);
-				fscanf(trace_fp,"%s",word);
+		} else if (temp=='$') { //if not comment, analyze it
+			//Check the two initial letters
+			c0 = fgetc(trace_fp); c1 = fgetc(trace_fp);
+			// $node_(i) set X_ 26.523097872900
+			if (c0 == 'n' && c1 == 'o')	{
+				for (i = 0; i < 4; i++)
+					temp = fgetc(trace_fp);
+				fscanf(trace_fp, "%d", &id);
+				temp = fgetc(trace_fp);
+				fscanf(trace_fp, "%s", word);
+				fscanf(trace_fp, "%s", word);
 
-				if(word[0]=='X')
-				{	fscanf(trace_fp,"%lf",&x0);
-					ini_x[id]=x0;
-					trace[id][t].x=x0;
-				}
-				else if(word[0]=='Y')
-				{	fscanf(trace_fp,"%lf",&y0);
-					ini_y[id]=y0;
-					trace[id][t].y=y0;
-				}
-				else
-				{	fscanf(trace_fp,"%lf",&z0);}
-			}
+				if (word[0] == 'X') {
+					fscanf(trace_fp, "%lf", &x0);
+					ini_x[id] = x0;
+					trace[id][t].x = x0;
+				}	else if(word[0]=='Y')	{
+					fscanf(trace_fp, "%lf", &y0);
+					ini_y[id] = y0;
+					trace[id][t].y = y0;
+				}	else fscanf(trace_fp,"%lf",&z0);
 			// $god_ set-dist 0 1 1677215
-			else if(c0=='g' && c1=='o')
-			{
-				if(fgets(sentence,100,trace_fp)==NULL)
-					printf("Wrong format for $god_ argument!\n");	}
+			} else if (c0=='g' && c1=='o') {
+				if (fgets(sentence,100,trace_fp) == NULL)
+					printf("Wrong format for $god_ argument!\n");
 			// $ns_ at 30.000000234323 "$node_(1) setdest 534.67642310 435.43899348 43.367834743"
 			// or $ns_ at 344.442322520850 "$god_ set-dist 0 1 7215"
-			else if(c0=='n' && c1=='s')
-			{
-				temp=fgetc(trace_fp);
-				fscanf(trace_fp,"%s",word);
-				fscanf(trace_fp,"%lf",&time);
+			} else if (c0 == 'n' && c1 == 's') {
+				temp = fgetc(trace_fp);
+				fscanf(trace_fp, "%s" ,word);
+				fscanf(trace_fp, "%lf" ,&time);
 
-				t=(int)time;
+				t = (int)time;
 
+				temp = fgetc(trace_fp); temp = fgetc(trace_fp); temp = fgetc(trace_fp); //< "$>
+				c0 = fgetc(trace_fp);
+				if (c0=='n')	{
+					for (i = 0; i < 5; i++)
+						temp = fgetc(trace_fp);
+					fscanf(trace_fp, "%d", &id);
+					temp = fgetc(trace_fp);
 
-				temp=fgetc(trace_fp);temp=fgetc(trace_fp);temp=fgetc(trace_fp); //< "$>
+					fscanf(trace_fp, "%s", word);
+					fscanf(trace_fp, "%lf", &x);
+					fscanf(trace_fp, "%lf", &y);
+					fscanf(trace_fp, "%lf", &speed);
+					temp = fgetc(trace_fp);
 
-				c0=fgetc(trace_fp);
-				if(c0=='n')
-				{
-					for(i=0;i<5;i++)
-						temp=fgetc(trace_fp);
-					fscanf(trace_fp,"%d",&id);
-					temp=fgetc(trace_fp);
+					trace[id][t].id = id;
+					trace[id][t].time = time;
+					trace[id][t].next_x = x; //x aqui eh o x de destino (prox parada, q o no atingira apos t segundos) nao necessariamente o proximo x!
+					trace[id][t].next_y = y;
+					trace[id][t].speed = speed;
+					trace[id][t].angle = 0;
 
-					fscanf(trace_fp,"%s",word);
-					fscanf(trace_fp,"%lf",&x);
-					fscanf(trace_fp,"%lf",&y);
-					fscanf(trace_fp,"%lf",&speed);
-					temp=fgetc(trace_fp);
-
-					trace[id][t].id=id;
-					trace[id][t].time=time;
-					trace[id][t].next_x=x; //x aqui eh o x de destino (prox parada, q o no atingira apos t segundos) nao necessariamente o proximo x!
-					trace[id][t].next_y=y;
-					trace[id][t].speed=speed;
-					trace[id][t].angle=0;
-
-					if(t==0){ //find the velocity angle and the duration of the first trip
+					if (t==0) { //find the velocity angle and the duration of the first trip
 						trace[id][t].x = ini_x[id];
 						trace[id][t].y = ini_y[id];
-						trace[id][t].angle=get_angle(trace[id][t].x,trace[id][t].y,
+						trace[id][t].angle = get_angle(trace[id][t].x,trace[id][t].y,
 																trace[id][t].next_x,trace[id][t].next_y);
 						trace[id][t].timetodestiny = (int) dist(trace[id][t].x,trace[id][t].y,
 												trace[id][t].next_x,trace[id][t].next_y) / trace[id][t].speed;
 					}
-
-				}
-				else if(c0=='g')
-				{	if(fgets(sentence,100,trace_fp)==NULL)
-						printf("Wrong format for $ns $god_ argument!\n");
+				}	else if(c0=='g') {
+						if(fgets(sentence,100,trace_fp) == NULL)
+							printf("Wrong format for $ns $god_ argument!\n");
 				}
 			}// for "ns","node","god"
 		}//for "# or $"
@@ -402,24 +368,24 @@ void Trace::read_trace(char *filename)
 
 void Trace::set_data() {
 
-	int id,t,t_aux,ttd=0;
+	int id, t, t_aux, ttd = 0;
 	float distance;
 
 	//waypoints: a bidimensional array that stores the visiting points of a node
 	waypoints = new struct point* [NODE_NUM];
-	for(int i=0;i<NODE_NUM;i++)
-		waypoints[i]=new struct point[MAX_NUMBER_WAYPOINTS];
+	for (int i = 0; i < NODE_NUM; i++)
+		waypoints[i] = new struct point[MAX_NUMBER_WAYPOINTS];
 
-	for(id=0;id<NODE_NUM;id++){
+	for (id = 0; id < NODE_NUM; id++){
 		//add the first waypoint (at t=0)
-		waypoints[id][0].x=trace[id][0].x;
-		waypoints[id][0].y=trace[id][0].y;
-		waypoints[id][0].time=0;
+		waypoints[id][0].x = trace[id][0].x;
+		waypoints[id][0].y = trace[id][0].y;
+		waypoints[id][0].time = 0;
 
-		t=t_aux=0;
+		t = t_aux = 0;
 
-		while (node_is_stationary(id,t_aux) && t_aux<TIME_SLOT){
-			update_stationary_state(id,t_aux);
+		while (node_is_stationary(id, t_aux) && t_aux < TIME_SLOT) {
+			update_stationary_state(id, t_aux);
 			t_aux++;
 			//printSingleTrace(id,t_aux);
 		}
@@ -434,70 +400,57 @@ void Trace::set_data() {
 		int wtindex = 0; //waypoint time index (the time steps when nodes start to pause)
 
 		//if t>0 implies that node has been paused for 't' seconds
-		if (t>0) nodePauseTimes[id][pindex++]=t;
+		if (t > 0) nodePauseTimes[id][pindex++] = t;
 
 		int paux = 0;
 
-		while(t<TIME_SLOT){
+		while (t < TIME_SLOT) {
 
-			ttd = start_new_movement(id,t); //ttd is the Time To arrive at the next Destination
+			ttd = start_new_movement(id, t); //ttd is the Time To arrive at the next Destination
 
 			if (aindex == 0) { //the first value must be stored
-
 				nodeAngles[id][aindex++] = getPositiveAngle(trace[id][t].angle);
-
-			} //only store node's velocity angle iff it's different than the previous value
-			else if (t>0 && !equal_or_almost_equal(trace[id][t].angle,trace[id][t-1].angle)){
-
+				//only store node's velocity angle iff it's different than the previous value
+			} else if (t > 0 && !equal_or_almost_equal(trace[id][t].angle, trace[id][t - 1].angle)){
 				nodeAngles[id][aindex++] = getPositiveAngle(trace[id][t].angle); //1..360 degrees (instead of using radians)
 			}
 
 			nodeSpeeds[id][sindex++] = trace[id][t].speed;
 
-			for (t_aux = t+1; ((ttd > 0) && t_aux<TIME_SLOT); t_aux++) {
-				ttd = update_moving_state(id,t_aux);
-			}
+			for (t_aux = t + 1; ttd > 0 && t_aux < TIME_SLOT; t_aux++)
+				ttd = update_moving_state(id, t_aux);
 
-			if (t_aux>=TIME_SLOT){
-				break;
-			}
+			if (t_aux >= TIME_SLOT)	break;
+
 			t_aux--; //in order to check if node was previously stationary
+			paux = t_aux;
 
-			paux=t_aux;
-
-			if (node_is_stationary(id,t_aux)){
-
+			if (node_is_stationary(id, t_aux)) {
 				//add one more waypoint
-				waypoints[id][windex].x=trace[id][t_aux].x;
-				waypoints[id][windex].y=trace[id][t_aux].y;
-				waypoints[id][windex].time=t_aux;
+				waypoints[id][windex].x = trace[id][t_aux].x;
+				waypoints[id][windex].y = trace[id][t_aux].y;
+				waypoints[id][windex].time = t_aux;
 
 				//store the distance between this and the previous waypoint
 				nodeTripLengths[id][tripindex] = dist(waypoints[id][windex].x, waypoints[id][windex].y,
-													waypoints[id][windex-1].x, waypoints[id][windex-1].y);
+													waypoints[id][windex - 1].x, waypoints[id][windex - 1].y);
 
 				//now compute all the distance traveled between this and the previous waypoint
-				nodePathLengths[id][tripindex++] = distanceTraveled(id, waypoints[id][windex-1].time, waypoints[id][windex].time);
+				nodePathLengths[id][tripindex++] = distanceTraveled(id, waypoints[id][windex - 1].time, waypoints[id][windex].time);
 				windex++;
 			}
 
-			while (node_is_stationary(id,t_aux) && t_aux<TIME_SLOT){
-				update_stationary_state(id,t_aux);
+			while (node_is_stationary(id, t_aux) && t_aux < TIME_SLOT) {
+				update_stationary_state(id, t_aux);
 				t_aux++;
 			}
 
 			//set the pause time duration
-			if (trace[id][t_aux-1].speed==0){ //check if node was paused one time step before
-				if (t_aux>paux){
-					nodePauseTimes[id][pindex++]=t_aux-paux;
-				}
-			}
+			if (trace[id][t_aux - 1].speed == 0 && t_aux > paux) //check if node was paused one time step before
+				nodePauseTimes[id][pindex++] = t_aux - paux;
 
-			if (t_aux>=TIME_SLOT){
-				break;
-			}
-
-			t=t_aux;
+			if (t_aux >= TIME_SLOT)	break;
+			t = t_aux;
 		}
 	}
 
@@ -511,338 +464,256 @@ void Trace::set_data() {
 }
 
 //all the distance traveled between two time steps (measuring step by step)
-float Trace::distanceTraveled(int id, int t1, int t2){ //t2>t1
+float Trace::distanceTraveled(int id, int t1, int t2) { //t2>t1
 
-	float x1,y1;
-	float x2,y2;
-	float distx,disty;
+	float x1, y1;
+	float x2, y2;
+	float distx, disty;
 	float alldistance = 0;
 
-	for (int t = t1+1; t <= t2; t++) {
-		x1 = trace[id][t-1].x;
-		y1 = trace[id][t-1].y;
+	for (int t = t1 + 1; t <= t2; t++) {
+		x1 = trace[id][t - 1].x;
+		y1 = trace[id][t - 1].y;
 		x2 = trace[id][t].x;
 		y2 = trace[id][t].y;
-		distx = x2-x1;
-		disty = y2-y1;
-		alldistance += sqrt(distx*distx+disty*disty);
+		distx = x2 - x1;
+		disty = y2 - y1;
+		alldistance += sqrt(distx * distx + disty * disty);
 	}
-
 	return alldistance;
 }
 
-float Trace::getPositiveAngle(float a){
-
+//If angle is 0, should this function return 360?
+float Trace::getPositiveAngle(float a) {
 	float angle = (180 * a)/PI;
-
-	return angle > 0 ? angle : 360 - (-1)*angle;
-
+	return angle > 0 ? angle : 360 - (-1) * angle;
 }
 
-void Trace::fillNodesPauseTimes(){
-
-	int aux=0, k=0;
-
-	for (int i = 0; i < NODE_NUM; ++i) {
-		k=0;
-		while (nodePauseTimes[i][k] > 0 && aux<NODES_PAUSE_TIME_SLOT){
+void Trace::fillNodesPauseTimes() {
+	int aux = 0, k = 0;
+	for (int i = 0; i < NODE_NUM; ++i)
+		for (k = 0; nodePauseTimes[i][k] > 0 && aux < NODES_PAUSE_TIME_SLOT; k++)
 			nodesPauseTimes[aux++] = nodePauseTimes[i][k];
-			k++;
-		}
-	}
 }
 
-void Trace::fillNodesSpeeds(){
-//amorzinho do meu coracao cato letra p q te amo de montao amo elmano
-
-	int aux=0, k=0;
-
-	for (int i = 0; i < NODE_NUM; ++i) {
-		k=0;
-		while (nodeSpeeds[i][k] != NIL && aux<NODES_SPEED_SLOT){
+void Trace::fillNodesSpeeds() {
+	int aux = 0, k = 0;
+	for (int i = 0; i < NODE_NUM; ++i)
+		for (k = 0; nodeSpeeds[i][k] != NIL && aux < NODES_SPEED_SLOT; k++)
 			nodesSpeeds[aux++] = nodeSpeeds[i][k];
-			k++;
-		}
-	}
 }
 
-void Trace::fillNodesAngles(){
-
-	int aux=0, k=0;
-
-	for (int i = 0; i < NODE_NUM; ++i) {
-		k=0;
-		while (nodeAngles[i][k] != NIL && aux<NODES_ANGLE_SLOT){
+void Trace::fillNodesAngles() {
+	int aux = 0, k = 0;
+	for (int i = 0; i < NODE_NUM; ++i)
+		for (k = 0; nodeAngles[i][k] != NIL && aux < NODES_ANGLE_SLOT; k++)
 			nodesAngles[aux++] = nodeAngles[i][k];
-			k++;
-		}
-	}
 }
 
-void Trace::fillNodesTripLengths(){
-
-	int aux=0, k=0;
-
-	for (int i = 0; i < NODE_NUM; ++i) {
-		k=0;
-		while (nodeTripLengths[i][k] != NIL && aux<NODES_TRIP_LENGTH_SLOT){
+void Trace::fillNodesTripLengths() {
+	int aux = 0, k = 0;
+	for (int i = 0; i < NODE_NUM; ++i)
+		for (k = 0; nodeTripLengths[i][k] != NIL && aux < NODES_TRIP_LENGTH_SLOT; k++)
 			nodesTripLengths[aux++] = nodeTripLengths[i][k];
-			k++;
-		}
-	}
 }
 
-void Trace::fillNodesPathLengths(){
-
-	int aux=0, k=0;
-
-	for (int i = 0; i < NODE_NUM; ++i) {
-		k=0;
-		while (nodePathLengths[i][k] != NIL && aux<NODES_PATH_LENGTH_SLOT){
+void Trace::fillNodesPathLengths() {
+	int aux = 0, k = 0;
+	for (int i = 0; i < NODE_NUM; ++i)
+		for (k = 0; nodePathLengths[i][k] != NIL && aux < NODES_PATH_LENGTH_SLOT; k++)
 			nodesPathLengths[aux++] = nodePathLengths[i][k];
-			k++;
-		}
-	}
 }
 
-void Trace::fillDistances(){
-
-	for(int i=0; i<NODE_NUM;i++){
-		for(int j=i+1; j<NODE_NUM;j++){
-			for(int t=0;t<TIME_SLOT;t++){
-				distances[i][j][t] = distance_i_j(i,j,t);
-				//if (i==0 && j==1)
-				//printf("distances[%d][%d][%d]= %f\n", i, j, t, distances[i][j][t]);
-			}
-		}
-	}
+void Trace::fillDistances() {
+	int i, j, t;
+	for (i = 0; i < NODE_NUM; i++)
+		for (j = i + 1; j < NODE_NUM; j++)
+			for (t = 0; t < TIME_SLOT; t++)
+				distances[i][j][t] = distance_i_j(i, j, t);
 }
 
-float Trace::speed_angle_rate(int i){
-
+float Trace::speed_angle_rate(int i) {
 	int numberOfSpeedValues = getLength(nodeSpeeds[i], NODE_SPEED_SLOT);
 	int numberOfAngleValues = getLength(nodeAngles[i], NODE_ANGLE_SLOT);
 
+	//MAX is used somewhere?
 	int MAX = NODE_SPEED_SLOT;
-	if (NODE_ANGLE_SLOT > NODE_SPEED_SLOT){
-		MAX = NODE_ANGLE_SLOT;
-	}
+	if (NODE_ANGLE_SLOT > NODE_SPEED_SLOT) MAX = NODE_ANGLE_SLOT;
 
-	if (numberOfAngleValues > 0){
-		return (float) numberOfSpeedValues / (numberOfAngleValues);
-	} else
-		return 0; //should never happen
+	//numberOfAngleValues should never be <= 0
+	return numberOfAngleValues > 0 ? numberOfSpeedValues / (float) numberOfAngleValues : 0;
 }
 
-float Trace::speed_angle_rate(){
-
+float Trace::speed_angle_rate() {
 	int numberOfSpeedValues = getLength(nodesSpeeds, NODES_SPEED_SLOT);
 	int numberOfAngleValues = getLength(nodesAngles, NODES_ANGLE_SLOT);
 
+	//MAX is used somewhere?
 	int MAX = NODES_SPEED_SLOT;
-	if (NODES_ANGLE_SLOT > NODES_SPEED_SLOT){
-		MAX = NODES_ANGLE_SLOT;
-	}
+	if (NODES_ANGLE_SLOT > NODES_SPEED_SLOT) MAX = NODES_ANGLE_SLOT;
 
-	if (numberOfAngleValues > 0){
-		return (float) numberOfSpeedValues / numberOfAngleValues;
-	} else
-		return 0; //should never happen
+	//numberOfAngleValues should never be <= 0
+	return numberOfAngleValues > 0 ? numberOfSpeedValues / (float) numberOfAngleValues : 0;
 }
 
-float Trace::angle_variation_coefficient(){
-
+float Trace::angle_variation_coefficient() {
 	float mean = getAverageNotZero(nodesAngles, NODES_ANGLE_SLOT);
 	float std = getStdNotZero(nodesAngles, mean, NODES_ANGLE_SLOT);
-
-	return std/mean;
+	return std / mean;
 }
 
-float Trace::speed_variation_coefficient(){
-
+float Trace::speed_variation_coefficient() {
 	float mean = getAverageNotZero(nodesSpeeds, NODES_SPEED_SLOT);
-	//printf("mean=%f\n",mean);
 	float std = getStdNotZero(nodesSpeeds, mean, NODES_SPEED_SLOT);
-	//printf("std=%f\n",std);
-	return std/mean;
+	return std / mean;
 }
 
-float Trace::pause_variation_coefficient(){
-
+float Trace::pause_variation_coefficient() {
 	float mean = getAverageNotZero(nodesPauseTimes, NODES_PAUSE_TIME_SLOT);
 	float std = getStdNotZero(nodesPauseTimes, mean, NODES_PAUSE_TIME_SLOT);
 
-	return std/mean;
+	return std / mean;
 }
 
-int Trace::getLength(float array[], int size){
-
-	int count = 0;
-	for (int k = 0; (k < size) && (array[k] != NIL); ++k) {
+int Trace::getLength(float array[], int size) {
+	int count = 0, k;
+	for (k = 0; (k < size) && (array[k] != NIL); ++k)
 		count++;
-	}
-
 	return count;
 }
 
-
-void Trace::printPauseTimes(int i){
-
-	printf("Pause times of node %d:\n",i);
-	for(int k=0;k<NODE_PAUSE_TIME_SLOT;k++){
+void Trace::printPauseTimes(int i) {
+	printf("Pause times of node %d:\n", i);
+	for (int k = 0; k < NODE_PAUSE_TIME_SLOT; k++)
 		printf("%f \t", nodePauseTimes[i][k]);
-	}
 }
 
-void Trace::printPauseTimes(){
-
+void Trace::printPauseTimes() {
 	printf("Pause times of all nodes:\n");
-	for(int k=0;k<NODES_PAUSE_TIME_SLOT;k++){
+	for (int k = 0; k < NODES_PAUSE_TIME_SLOT; k++)
 		printf("%f \t", nodesPauseTimes[k]);
-	}
 }
 
-void Trace::printAngles(int i){
-
+void Trace::printAngles(int i) {
 	printf("Velocity angles of node %d:\n",i);
-	for(int k=0; nodeAngles[i][k] != NIL && k<NODE_ANGLE_SLOT;k++){
+	for (int k = 0; nodeAngles[i][k] != NIL && k < NODE_ANGLE_SLOT; k++)
 		printf("%f \n", nodeAngles[i][k]);
-	}
 }
 
-void Trace::printAngles(){
-
+void Trace::printAngles() {
 	printf("Velocity angles of all node:\n");
-	for(int k=0; nodesAngles[k] != NIL && k<NODES_ANGLE_SLOT;k++){
+	for (int k = 0; nodesAngles[k] != NIL && k < NODES_ANGLE_SLOT; k++)
 		printf("%f \n", nodesAngles[k]);
-	}
 }
 
-void Trace::printSpeeds(int i){
-
-	printf("Speeds of node %d:\n",i);
-	for(int k=0; nodeSpeeds[i][k] != NIL && k<NODE_SPEED_SLOT ;k++){
+void Trace::printSpeeds(int i) {
+	printf("Speeds of node %d:\n", i);
+	for (int k = 0; nodeSpeeds[i][k] != NIL && k < NODE_SPEED_SLOT; k++)
 		printf("%f \n", nodeSpeeds[i][k]);
-	}
 }
 
-void Trace::printSpeeds(){
-
+void Trace::printSpeeds() {
 	printf("Speeds of all nodes:\n");
-	for(int k=0; nodesSpeeds[k] != NIL && k<NODES_SPEED_SLOT; k++){
+	for (int k = 0; nodesSpeeds[k] != NIL && k < NODES_SPEED_SLOT; k++)
 		printf("%f \n", nodesSpeeds[k]);
-	}
-
 }
 
-void Trace::printTripLengths(int i){
-
-	printf("Trip lengths for node %d:\n",i);
-	for(int k=0; nodeTripLengths[i][k] != NIL && k<NODE_TRIP_LENGTH_SLOT; k++){
+void Trace::printTripLengths(int i) {
+	printf("Trip lengths for node %d:\n", i);
+	for (int k = 0; nodeTripLengths[i][k] != NIL && k < NODE_TRIP_LENGTH_SLOT; k++)
 		printf("%f \n", nodeTripLengths[i][k]);
-	}
 }
 
-void Trace::printTripLengths(){
-
+void Trace::printTripLengths() {
 	printf("Trip lengths for all nodes:\n");
-	for(int k=0; nodesTripLengths[k] != NIL && k<NODES_TRIP_LENGTH_SLOT; k++){
+	for (int k = 0; nodesTripLengths[k] != NIL && k < NODES_TRIP_LENGTH_SLOT; k++)
 		printf("%f \n", nodesTripLengths[k]);
-	}
 }
 
-void Trace::printPathLengths(int i){
-
-	printf("Path lengths for node %d:\n",i);
-	for(int k=0; nodeTripLengths[i][k] != NIL && k<NODE_TRIP_LENGTH_SLOT; k++){
+void Trace::printPathLengths(int i) {
+	printf("Path lengths for node %d:\n", i);
+	for (int k = 0; nodeTripLengths[i][k] != NIL && k < NODE_TRIP_LENGTH_SLOT; k++)
 		printf("Path[%d] %f \t Trip[%d] % f \n", k, nodePathLengths[i][k], k, nodeTripLengths[i][k]);
-	}
 }
 
-void Trace::printPathLengths(){
-
+void Trace::printPathLengths() {
 	printf("Path lengths for all nodes:\n");
-	for(int k=0; nodesPathLengths[k] != NIL && k<NODES_TRIP_LENGTH_SLOT; k++){
-		//printf("Path[%d] %f \t Trip[%d] % f \n", k, nodesPathLengths[k], k, nodesTripLengths[k]);
+	for (int k = 0; nodesPathLengths[k] != NIL && k < NODES_TRIP_LENGTH_SLOT; k++)
 		printf("%f \n", nodesPathLengths[k]);
-	}
+		//printf("Path[%d] %f \t Trip[%d] % f \n", k, nodesPathLengths[k], k, nodesTripLengths[k]);
 }
 
-void Trace::printSingleTrace(int i, int t){
-
-	printf("trace[%d][%d] (%f,%f) (%f %f) %f %f \n",i,t,trace[i][t].x,trace[i][t].y,
-			trace[i][t].next_x,trace[i][t].next_y,
-			trace[i][t].speed,trace[i][t].angle/3.14159265359*180);
+void Trace::printSingleTrace(int i, int t) {
+	printf("trace[%d][%d] (%f,%f) (%f %f) %f %f \n", i, t, trace[i][t].x, trace[i][t].y,
+			trace[i][t].next_x, trace[i][t].next_y,
+			trace[i][t].speed, trace[i][t].angle / 3.14159265359 * 180);
 }
 
-int Trace::start_new_movement(int id, int t){
-
+int Trace::start_new_movement(int id, int t) {
 	//starting a new trip: actual x,y should be the previous next_x, next_y
-	if (t > 0){
+	if (t > 0) {
 		trace[id][t].x = trace[id][t-1].next_x;
 		trace[id][t].y = trace[id][t-1].next_y;
 	}
 
-	float distance = dist(trace[id][t].x,trace[id][t].y,trace[id][t].next_x,trace[id][t].next_y);
+	float distance = dist(trace[id][t].x, trace[id][t].y, trace[id][t].next_x, trace[id][t].next_y);
 
-	trace[id][t].id=id;
-	trace[id][t].time=t;
-	trace[id][t].angle = get_angle(trace[id][t].x,trace[id][t].y,trace[id][t].next_x,trace[id][t].next_y);
+	trace[id][t].id = id;
+	trace[id][t].time = t;
+	trace[id][t].angle = get_angle(trace[id][t].x, trace[id][t].y, trace[id][t].next_x, trace[id][t].next_y);
 	trace[id][t].timetodestiny = (int) distance / trace[id][t].speed + 1; //due the int is truncated during float conversion
 	return trace[id][t].timetodestiny;
 }
 
-void Trace::update_stationary_state(int id, int t){
-
-	if(t==0){ //there is x,y but not next_x,y
+void Trace::update_stationary_state(int id, int t) {
+	//t == 0 does nothing, because the same is done after the if statment
+	if (t == 0) { //there is x,y but not next_x,y
 		trace[id][t].next_x = trace[id][t].x;
 		trace[id][t].next_y = trace[id][t].y;
+	} else { //there is next_x,y but not x,y
+		trace[id][t].x = trace[id][t - 1].next_x;
+		trace[id][t].y = trace[id][t - 1].next_y;
 	}
-	 else{ //there is next_x,y but not x,y
-		trace[id][t].x=trace[id][t-1].next_x;
-		trace[id][t].y=trace[id][t-1].next_y;
-	}
-	trace[id][t].id=id;
-	trace[id][t].time=t;
-	trace[id][t].next_x=trace[id][t].x;
-	trace[id][t].next_y=trace[id][t].y;
+
+	trace[id][t].id = id;
+	trace[id][t].time = t;
+	trace[id][t].next_x = trace[id][t].x;
+	trace[id][t].next_y = trace[id][t].y;
 	trace[id][t].speed = 0.0; //correction if the trace was wrong (like in the SLAW code, where it is 1.0)
 	trace[id][t].angle = 0.0;
 	trace[id][t].timetodestiny = 0.0; //of course, node is not moving!
 }
 
-int Trace::update_moving_state(int id, int t){
+int Trace::update_moving_state(int id, int t) {
 
 	//update new x,y values
-	trace[id][t].id=id;
-	trace[id][t].time=t;
-	trace[id][t].x = trace[id][t-1].x + trace[id][t-1].speed*cos(trace[id][t-1].angle);
+	trace[id][t].id = id;
+	trace[id][t].time = t;
+	trace[id][t].x = trace[id][t - 1].x + trace[id][t - 1].speed * cos(trace[id][t - 1].angle);
 	//printf("trace[id][t].x: %d \n",trace[id][t].x);
-	trace[id][t].y = trace[id][t-1].y + trace[id][t-1].speed*sin(trace[id][t-1].angle);
+	trace[id][t].y = trace[id][t - 1].y + trace[id][t - 1].speed * sin(trace[id][t - 1].angle);
 	trace[id][t].x = floor(trace[id][t].x * 100 +  0.5) / 100; //to avoid very small decimal values
 	//printf("trace[id][t].x: %d \n",trace[id][t].x);
 	trace[id][t].y = floor(trace[id][t].y * 100 +  0.5) / 100; //to avoid very small decimal values
 
 	//BUG AQUI: pode acontecer de o no ja ter chegado quando ttd=2! ex: no 0 em t=68,95 (RPGM_d900_n10_x500_y500_a5_s0_r100_c0.0_l1_h10_p0_0)
-	if(trace[id][t-1].timetodestiny == 1 || (trace[id][t-1].timetodestiny == 2 && trace[id][t].next_x != 0)){
+	if(trace[id][t - 1].timetodestiny == 1 || (trace[id][t - 1].timetodestiny == 2 && trace[id][t].next_x != 0)) {
 		//node arrived at destination at time t, then actual position should be the same as next position at t-1.
-		trace[id][t].x = trace[id][t-1].next_x;
-		trace[id][t].y = trace[id][t-1].next_y;
+		trace[id][t].x = trace[id][t - 1].next_x;
+		trace[id][t].y = trace[id][t - 1].next_y;
 		trace[id][t].timetodestiny = 0;
 
 		//if next_x,y is not zero than it should be equal to x,y (node is stationary now)
-		if (trace[id][t].next_x == 0){
+		if (trace[id][t].next_x == 0) {
 			trace[id][t].next_x = trace[id][t].x;
 			trace[id][t].next_y = trace[id][t].y;
 		}
-	}
-	else{ //node is still moving towards destination, then we should update the speed, angle and timetodestiny variables
+	} else { //node is still moving towards destination, then we should update the speed, angle and timetodestiny variables
+		trace[id][t].speed = trace[id][t - 1].speed;
+		trace[id][t].angle = trace[id][t - 1].angle;
+		trace[id][t].timetodestiny = trace[id][t - 1].timetodestiny - 1;
 
-		trace[id][t].speed = trace[id][t-1].speed;
-		trace[id][t].angle = trace[id][t-1].angle;
-		trace[id][t].timetodestiny = trace[id][t-1].timetodestiny - 1;
-
-		if (trace[id][t].next_x == 0 && trace[id][t].next_y == 0){ //i.e., there is no data about node id at time t in the trace file
+		if (trace[id][t].next_x == 0 && trace[id][t].next_y == 0) { //i.e., there is no data about node id at time t in the trace file
 			trace[id][t].next_x = trace[id][t-1].next_x;
 			trace[id][t].next_y = trace[id][t-1].next_y;
 		}
@@ -853,160 +724,125 @@ int Trace::update_moving_state(int id, int t){
 			trace[id][t].timetodestiny = 0; //maybe this is redundant
 		}*/
 	}
-
 	return trace[id][t].timetodestiny;
 }
 
-bool Trace::node_is_stationary(int id, int t){
+bool Trace::node_is_stationary(int id, int t) {
 	//initial stationary condition:
-	if (t==0 and trace[id][t].speed==0){
-		trace[id][t].next_x=trace[id][t].x;
-		trace[id][t].next_y=trace[id][t].y;
+	if (t == 0 and trace[id][t].speed == 0){
+		trace[id][t].next_x = trace[id][t].x;
+		trace[id][t].next_y = trace[id][t].y;
 		return true;
 	}
 	//node is stationary if previous speed is 0 and next_x,y is equal as previous x,y or next_x,y is 0
 
-	return (is_at_destination(id,t) || trace[id][t].speed==0 ||
-			(equal_or_almost_equal(trace[id][t-1].x,trace[id][t].next_x) && equal_or_almost_equal(trace[id][t-1].y,trace[id][t].next_y)));
+	return (is_at_destination(id, t) || trace[id][t].speed==0 ||
+			(equal_or_almost_equal(trace[id][t - 1].x, trace[id][t].next_x) && equal_or_almost_equal(trace[id][t - 1].y, trace[id][t].next_y)));
 
 	/*bool previous_paused = trace[id][t-1].speed == 0;
 	return (   (previous_paused && (no_next_xy(id,t) || same_destination(id,t)) )
 			 || is_at_previous_position(id,t) || is_at_destination(id,t)        );*/
 }
 
-bool Trace::is_at_previous_position(int id, int t){ //TO CHECK: IS THIS EVER USED ??
-	return equal_or_almost_equal(trace[id][t].x, trace[id][t-1].x) &&
-			equal_or_almost_equal(trace[id][t].y, trace[id][t-1].y);
+bool Trace::is_at_previous_position(int id, int t) { //TO CHECK: IS THIS EVER USED ??
+	return equal_or_almost_equal(trace[id][t].x, trace[id][t - 1].x) &&
+			equal_or_almost_equal(trace[id][t].y, trace[id][t - 1].y);
 }
 
-bool Trace::is_at_destination(int id, int t){ //TO CHECK: IS THIS EVER USED ??
+bool Trace::is_at_destination(int id, int t) { //TO CHECK: IS THIS EVER USED ??
 	return equal_or_almost_equal(trace[id][t].x, trace[id][t].next_x) &&
 			equal_or_almost_equal(trace[id][t].y, trace[id][t].next_y);
 }
 
-bool Trace::same_destination(int id, int t){
-	return equal_or_almost_equal(trace[id][t].next_x, trace[id][t-1].next_x) &&
-			equal_or_almost_equal(trace[id][t].next_y, trace[id][t-1].next_y);
+bool Trace::same_destination(int id, int t) {
+	return equal_or_almost_equal(trace[id][t].next_x, trace[id][t - 1].next_x) &&
+			equal_or_almost_equal(trace[id][t].next_y, trace[id][t - 1].next_y);
 }
 
-bool Trace::no_next_xy(int id, int t){
-	return trace[id][t].next_x==0 && trace[id][t].next_y==0;
+bool Trace::no_next_xy(int id, int t) {
+	return trace[id][t].next_x == 0 && trace[id][t].next_y == 0;
 }
 
-void Trace::show_trace()
-{
-	int i,t;
-
-	for(i=0;i<NODE_NUM;i++)
-	{
-		for(t=0;t<TIME_SLOT;t++)
-		{
-			printf("trace[%d][%d] (%f,%f) (%f %f) %f %f \n",i,t,trace[i][t].x,trace[i][t].y,
-								trace[i][t].next_x,trace[i][t].next_y,
-								trace[i][t].speed,trace[i][t].angle/3.14159265359*180);
-		}
-	}
+void Trace::show_trace() {
+	int i, t;
+	for(i = 0; i < NODE_NUM; i++)
+		for(t = 0; t < TIME_SLOT; t++)
+			printf("trace[%d][%d] (%f,%f) (%f %f) %f %f \n", i, t, trace[i][t].x, trace[i][t].y,
+								trace[i][t].next_x, trace[i][t].next_y,
+								trace[i][t].speed, trace[i][t].angle / 3.14159265359 * 180);
 }
 
 //shows the trace info from t:0 to lastTimestep
-void Trace::show_trace(int start, int end)
-{
-	int i,t;
-
-	for(i=0;i<NODE_NUM;i++)
-	{
+void Trace::show_trace(int start, int end) {
+	int i, t;
+	for (i = 0; i < NODE_NUM; i++)
 		for(t=start;t<end;t++)
-		{
-			printf("trace[%d][%d] (%f,%f) (%f %f) %f %f \n",i,t,trace[i][t].x,trace[i][t].y,
-								trace[i][t].next_x,trace[i][t].next_y,
-								trace[i][t].speed,trace[i][t].angle/3.14159265359*180);
-		}
-	}
+			printf("trace[%d][%d] (%f,%f) (%f %f) %f %f \n", i, t, trace[i][t].x, trace[i][t].y,
+								trace[i][t].next_x, trace[i][t].next_y,
+								trace[i][t].speed, trace[i][t].angle / 3.14159265359 * 180);
 }
 
 //shows the trace info of node i from t:start to t:end
-void Trace::show_trace(int i, int start, int end)
-{
-	for(int t=start;t<end;t++) {
-		printf("trace[%d][%d] (%f,%f) (%f %f) %f %f \n",i,t,trace[i][t].x,trace[i][t].y,
-							trace[i][t].next_x,trace[i][t].next_y,
-							trace[i][t].speed,trace[i][t].angle/3.14159265359*180);
-	}
+void Trace::show_trace(int i, int start, int end) {
+	for (int t = start; t < end; t++)
+		printf("trace[%d][%d] (%f,%f) (%f %f) %f %f \n", i, t, trace[i][t].x, trace[i][t].y,
+							trace[i][t].next_x, trace[i][t].next_y,
+							trace[i][t].speed, trace[i][t].angle / 3.14159265359 * 180);
 }
 
-void Trace::cal_link(char *filename)
-{
+void Trace::cal_link(char *filename) {
 	int t;
-	int i,j;
+	int i, j;
 	int current_status;
 	FILE* fp;
 
 	//t=0, initiate the link status;
-	for(i=0;i<NODE_NUM;i++)
-		for(j=i+1;j<NODE_NUM;j++)
-		{
-			if( dist(trace[i][0].x, trace[i][0].y,
- 				trace[j][0].x, trace[j][0].y) <= RADIUS )
-			{	link_status[i][j]=1; link_status[j][i]=1;
-				link_up_num[i][j]=1; link_up_num[j][i]=1;
-				last_up_time[i][j]=0; last_up_time[j][i]=0;
-			}
-			else
-			{	link_status[i][j]=0; link_status[j][i]=0;	}
-		}
+	for (i = 0; i < NODE_NUM; i++)
+		for (j = i + 1; j < NODE_NUM; j++)
+			if(dist(trace[i][0].x, trace[i][0].y, trace[j][0].x, trace[j][0].y) <= RADIUS) {
+				link_status[i][j] = 1; link_status[j][i] = 1;
+				link_up_num[i][j] = 1; link_up_num[j][i] = 1;
+				last_up_time[i][j] = 0; last_up_time[j][i] = 0;
+			} else {	link_status[i][j]=0; link_status[j][i]=0;	}
 
-	for(t=1;t<TIME_SLOT;t++)
-	{
-		for(i=0;i<NODE_NUM;i++)
-			for(j=i+1;j<NODE_NUM;j++)
-			{
-				if( dist(trace[i][t].x, trace[i][t].y,
-					trace[j][t].x, trace[j][t].y) <= RADIUS)
+	for (t = 1; t < TIME_SLOT; t++)
+		for (i = 0; i < NODE_NUM; i++)
+			for (j = i + 1; j < NODE_NUM; j++) {
+				if (dist(trace[i][t].x, trace[i][t].y, trace[j][t].x, trace[j][t].y) <= RADIUS)
 					current_status = 1;
-				else
-					current_status = 0;
+				else current_status = 0;
 
 				// link: 0 ---> 1  link comes up
-				if(link_status[i][j]==0  && current_status==1)
-				{	link_up_num[i][j]++; link_up_num[j][i]++;
-					last_up_time[i][j]=t; last_up_time[j][i]=t;
+				if (link_status[i][j] == 0 && current_status == 1) {
+					link_up_num[i][j]++; link_up_num[j][i]++;
+					last_up_time[i][j] = t; last_up_time[j][i] = t;
 					link_status[i][j] = current_status;	link_status[j][i] = current_status;
 				}
 				// link: 1 ---> 0 link comes down
-				if(link_status[i][j]==1 && current_status==0)
-				{	link_down_num[i][j]++; link_down_num[j][i]++;
-					last_down_time[i][j]=t; last_down_time[j][i]=t;
+				if(link_status[i][j] == 1 && current_status == 0) {
+					link_down_num[i][j]++; link_down_num[j][i]++;
+					last_down_time[i][j] = t; last_down_time[j][i] = t;
 					link_status[i][j] = current_status;	link_status[j][i] = current_status;
-					ld_pdf[last_down_time[i][j]-last_up_time[i][j]]++;
+					ld_pdf[last_down_time[i][j] - last_up_time[i][j]]++;
 				}
 				//at the end of simulation, count the duration
-				if(t==TIME_SLOT-1 && link_status[i][j]==1 && current_status==1)
-					ld_pdf[(TIME_SLOT-last_up_time[i][j])]++;
+				if(t == TIME_SLOT-1 && link_status[i][j] == 1 && current_status == 1)
+					ld_pdf[(TIME_SLOT - last_up_time[i][j])]++;
+ 			}//for (j)
 
- 			}//for (i,j)
-
-	}//for(t)
-
-
-	for(i=0;i<NODE_NUM;i++)
-		for(j=i+1;j<NODE_NUM;j++)
-		{
+	for(i = 0; i < NODE_NUM; i++)
+		for(j = i + 1; j < NODE_NUM; j++) {
 			total_link_change += link_up_num[i][j];
 			total_link_change += link_down_num[i][j];
 		}
 
 	avg_link_duration = mean(ld_pdf);
-
-
-	fp=fopen(filename,"w");
-	if(fp==NULL)
-	{
-		printf("can not create the file\n");
-	}
-	for(i=0;i<TIME_SLOT;i++)
-		fprintf(fp,"%d\n",ld_pdf[i]);
+	fp = fopen(filename,"w");
+	if(fp == NULL)
+		{ printf("can not create the file\n"); return; }
+	for(i = 0; i < TIME_SLOT; i++)
+		fprintf(fp, "%d\n", ld_pdf[i]);
 	fclose(fp);
-
 }
 
 
