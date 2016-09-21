@@ -846,143 +846,114 @@ void Trace::cal_link(char *filename) {
 }
 
 
-void Trace::cal_node_degree(char* filename)
-{
-	int i,j,k;
-	int neighbor_all=0;
-	int neighbor_slot=0;
+void Trace::cal_node_degree(char* filename) {
+	int i, j, k;
+	int neighbor_all = 0;
+	int neighbor_slot = 0;
 	FILE *fp;
 
-	for(k=0;k<TIME_SLOT;k++){
+	for (k = 0; k < TIME_SLOT; k++) {
 		neighbor_slot = 0;
-		for(i=0;i<NODE_NUM;i++)
-			for(j=0;j<NODE_NUM;j++)
-			{
-				if(i!=j && dist(trace[i][k].x, trace[i][k].y,trace[j][k].x, trace[j][k].y) <= RADIUS)
-				{	neighbor_all++; neighbor_slot++;}
-			}
-		nd_pdf[k] = (float)neighbor_slot/(float)NODE_NUM;
+		for (i = 0; i < NODE_NUM; i++)
+			for (j = 0; j < NODE_NUM; j++)
+				if (i!=j && dist(trace[i][k].x, trace[i][k].y,trace[j][k].x, trace[j][k].y) <= RADIUS)
+					{	neighbor_all++; neighbor_slot++;}
+		nd_pdf[k] = neighbor_slot / (float)NODE_NUM;
 	}
-	node_degree = (float)neighbor_all / (float)(TIME_SLOT * NODE_NUM);
+	node_degree = neighbor_all / (float)(TIME_SLOT * NODE_NUM);
 
-	fp=fopen(filename,"w");
-	if(fp==NULL)
-	{
-		printf("can not create the file\n");
-	}
-
-	for(i=0;i<TIME_SLOT;i++)
-		fprintf(fp,"%f\n",nd_pdf[i]);
+	fp = fopen(filename,"w");
+	if (fp==NULL)
+		{	printf("can not create the file\n"); return; }
+	for (i = 0; i < TIME_SLOT; i++)
+		fprintf(fp, "%f\n", nd_pdf[i]);
 	fclose(fp);
-
 }
 
-
-
-void Trace::cal_static_degree(char* filename)
-{
-	int i,k;
-	int static_all=0;
+void Trace::cal_static_degree(char* filename) {
+	int i, k;
+	int static_all = 0;
 	int static_slot;
 	FILE *fp;
 
-	for(k=0;k<TIME_SLOT;k++){
+	for (k = 0;k < TIME_SLOT; k++) {
 		static_slot = 0;
-		for(i=0;i<NODE_NUM;i++)
-		{
-			if(trace[i][k].speed ==0)
-			{	static_all++; static_slot++;}
-		}
+		for (i = 0; i < NODE_NUM; i++)
+			if (trace[i][k].speed == 0)
+				{	static_all++; static_slot++; }
 		static_pdf[k] = static_slot;
 	}
-	static_degree = (float)static_all / (float)(TIME_SLOT);
+	static_degree = static_all / (float)(TIME_SLOT);
 
-	fp=fopen(filename,"w");
-	if(fp==NULL)
-	{
-		printf("can not create the file\n");
-	}
-
-	for(i=0;i<TIME_SLOT;i++)
-		fprintf(fp,"%d\n",static_pdf[i]);
+	fp = fopen(filename,"w");
+	if (fp == NULL)
+		{	printf("can not create the file\n"); return; }
+	for (i = 0; i < TIME_SLOT; i++)
+		fprintf(fp, "%d\n", static_pdf[i]);
 	fclose(fp);
 }
 
 
 //REMOTENESS function = STEP function (<2R,1; >2R,0)
-float Trace::average_relative_speed()
-{
-	float v1=0.0,v2=0.0,v3=0.0;
-	int t,i,j;
-	int count=0;
+float Trace::average_relative_speed() {
+	float v1 = 0.0,v2 = 0.0,v3 = 0.0;
+	int t, i, j;
+	int count = 0;
 
 	v3 = 0.0;
-	for(t=0;t<TIME_SLOT;t++)
-	{
-		v2=0.0; count=0;
-		for(i=0;i<NODE_NUM;i++)
-			for(j=i+1;j<NODE_NUM;j++)
-			{
-				if(distance_i_j(i,j,t) <= 2*RADIUS){
-					v1 = relative_speed(trace[i][t].speed,trace[i][t].angle,
-						trace[j][t].speed,trace[j][t].angle);
+	for (t = 0; t < TIME_SLOT; t++) {
+		v2 = 0.0; count = 0;
+		for (i = 0; i < NODE_NUM; i++)
+			for (j = i + 1; j < NODE_NUM; j++)
+				if (distance_i_j(i,j,t) <= 2 * RADIUS) {
+					v1 = relative_speed(trace[i][t].speed, trace[i][t].angle,
+															trace[j][t].speed, trace[j][t].angle);
 					v2 += v1;
 					count++;
 				}
-			}
 		if(count!=0)
-			v3 = v3 + v2/(float)count;
+			v3 = v3 + v2 / (float)count;
 	}
 	return v3 / (float)TIME_SLOT;
 }
 
 //Degree of Temporal Dependence - DTD
-float Trace::degree_of_temporal_dependence()
-{
-	float cor1_old=0.0,cor2_old=0.0,cor3_old=0.0;
-	int id,t,k;
-	int count_old=0;
+float Trace::degree_of_temporal_dependence() {
+	float cor1_old = 0.0, cor2_old = 0.0, cor3_old = 0.0;
+	int id, t, k;
+	int count_old = 0;
 	float DTD = 0.0;
 
-	for(id=0;id<NODE_NUM;id++)
-	{
-		cor2_old=0.0; count_old=0;
-		for(t=0;t<TIME_SLOT-50;t++)
-			for(k=t+1;k<t+50;k++)
-			{
-				if(k-t < 50){ //ALWAYS TRUE!!!
-					cor1_old = DSDijt(trace[id][t].speed,trace[id][t].angle,
-						trace[id][k].speed,trace[id][k].angle);
+	for (id = 0; id < NODE_NUM; id++) {
+		cor2_old = 0.0; count_old = 0;
+		for (t = 0; t < TIME_SLOT - 50; t++)
+			for (k = t + 1; k < t + 50; k++)
+				if (k - t < 50) { //ALWAYS TRUE!!!
+					cor1_old = DSDijt(trace[id][t].speed, trace[id][t].angle,
+														trace[id][k].speed, trace[id][k].angle);
 					cor2_old += cor1_old;
 					count_old++;
 				}
-			}
-		if(count_old!=0)
-			cor3_old = cor3_old + cor2_old/(float)count_old;
+		if (count_old!=0)
+			cor3_old = cor3_old + cor2_old / (float)count_old;
 	}
 	DTD = cor3_old / (float)NODE_NUM;
 	return DTD;
 }
 
 //Improved Degree of Temporal Dependence - IDTD
-float Trace::improved_degree_of_temporal_dependence()
-{
-	float cor1=0.0,cor2=0.0,cor3=0.0;
-	int i,t;
-	int count=0;
+float Trace::improved_degree_of_temporal_dependence() {
+	float cor1 = 0.0, cor2 = 0.0, cor3 = 0.0;
+	int i, t;
+	int count = 0;
 	float IDTD = 0.0;
 
-	cor3 = 0.0;
-
-	for(i=0;i<NODE_NUM;i++){
-
-		cor2=0.0; count=0;
-
-		for(t=1;t<TIME_SLOT;t++){
-
-			if(velocity_has_changed(i,t)){
-				cor1 = basic_correlation_positive(trace[i][t].speed,trace[i][t].angle,
-					trace[i][t-1].speed,trace[i][t-1].angle);
+	for (i = 0; i < NODE_NUM; i++) {
+		cor2 = 0.0; count = 0;
+		for (t = 1; t < TIME_SLOT; t++){
+			if (velocity_has_changed(i,t)) {
+				cor1 = basic_correlation_positive(trace[i][t].speed, trace[i][t].angle,
+																					trace[i][t-1].speed, trace[i][t-1].angle);
 				cor2 += cor1;
 				temporalCorrelations[i][t] = cor1; //this is not used yet
 				count++;
@@ -992,40 +963,32 @@ float Trace::improved_degree_of_temporal_dependence()
 			//	cor1 = compute_mean_basic_temporal_correlation(i,t-1);
 			//}
 		}
-
-		if(count!=0)
-			cor3 = cor3 + cor2/(float)count;
+		if (count != 0)
+			cor3 = cor3 + cor2 / (float)count;
 	}
-
 	IDTD = cor3 / (float)NODE_NUM;
 	return IDTD;
-
 }
 
 //Degree of Spatial Dependence - DSD
-float Trace::degree_of_spatial_dependence()
-{
-	float cor1=0.0,cor2=0.0,cor3=0.0;
-	int t,i,j;
-	int count_old=0;
+float Trace::degree_of_spatial_dependence() {
+	float cor1 = 0.0, cor2 = 0.0, cor3 = 0.0;
+	int t, i, j;
+	int count_old = 0;
 
-	cor3 = 0.0;
-	for(t=0;t<TIME_SLOT;t++)
-	{
-		cor2=0.0; count_old=0;
-		for(i=0;i<NODE_NUM;i++)
-			for(j=i+1;j<NODE_NUM;j++)
-			{
-				if(distance_i_j(i,j,t) <= 2*RADIUS){
-					cor1 = DSDijt(trace[i][t].speed,trace[i][t].angle,
-						trace[j][t].speed,trace[j][t].angle);
+	for (t = 0; t < TIME_SLOT; t++) {
+		cor2 = 0.0; count_old = 0;
+		for (i = 0; i < NODE_NUM; i++)
+			for (j = i + 1; j < NODE_NUM; j++)
+				if (distance_i_j(i,j,t) <= 2*RADIUS) {
+					cor1 = DSDijt(trace[i][t].speed, trace[i][t].angle,
+												trace[j][t].speed, trace[j][t].angle);
 					DSD[i][j][t] = cor1;
 					cor2 += cor1;
 					count_old++;
 				}
-			}
-		if(count_old!=0)
-			cor3 = cor3 + cor2/(float)count_old;
+		if (count_old != 0)
+			cor3 = cor3 + cor2 / (float)count_old;
 	}
 	return cor3 / (float)TIME_SLOT;
 }
