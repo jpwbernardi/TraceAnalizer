@@ -116,7 +116,7 @@ int main(int argc, char* argv[])
 
 
 	//LD is both link and time-based
-	//PVC is only time-based
+	//PVC is only time-based */
 
 	/*mytrace.print_spatial_dependence_statistics(0,1);
 	mytrace.print_DSD(0,1,0,100);
@@ -150,7 +150,7 @@ int main(int argc, char* argv[])
 	mytrace.SCENARIO_LENGTH = atoi(argv[6]);
 
 
-	trace = new struct data* [NODE_NUM];
+	trace = new struct data * [NODE_NUM];
 	for(i = 0; i < NODE_NUM; i++)
 		trace[i] = new struct data[TIME_SLOT];
 

@@ -369,7 +369,7 @@ void Trace::read_trace(char *filename) {
 void Trace::set_data() {
 
 	int id, t, t_aux, ttd = 0;
-	float distance;
+	//float distance; Not used
 
 	//waypoints: a bidimensional array that stores the visiting points of a node
 	waypoints = new struct point* [NODE_NUM];
@@ -397,7 +397,7 @@ void Trace::set_data() {
 		int sindex  = 0; //speed array index
 		int tripindex = 0;	//trip length array index
 		int windex = 1; //waypoint index
-		int wtindex = 0; //waypoint time index (the time steps when nodes start to pause)
+		//int wtindex = 0; //waypoint time index (the time steps when nodes start to pause) Not used
 
 		//if t>0 implies that node has been paused for 't' seconds
 		if (t > 0) nodePauseTimes[id][pindex++] = t;
@@ -537,8 +537,8 @@ float Trace::speed_angle_rate(int i) {
 	int numberOfAngleValues = getLength(nodeAngles[i], NODE_ANGLE_SLOT);
 
 	//MAX is used somewhere?
-	int MAX = NODE_SPEED_SLOT;
-	if (NODE_ANGLE_SLOT > NODE_SPEED_SLOT) MAX = NODE_ANGLE_SLOT;
+	// int MAX = NODE_SPEED_SLOT;
+	// if (NODE_ANGLE_SLOT > NODE_SPEED_SLOT) MAX = NODE_ANGLE_SLOT;
 
 	//numberOfAngleValues should never be <= 0
 	return numberOfAngleValues > 0 ? numberOfSpeedValues / (float) numberOfAngleValues : 0;
@@ -549,8 +549,8 @@ float Trace::speed_angle_rate() {
 	int numberOfAngleValues = getLength(nodesAngles, NODES_ANGLE_SLOT);
 
 	//MAX is used somewhere?
-	int MAX = NODES_SPEED_SLOT;
-	if (NODES_ANGLE_SLOT > NODES_SPEED_SLOT) MAX = NODES_ANGLE_SLOT;
+	// int MAX = NODES_SPEED_SLOT;
+	// if (NODES_ANGLE_SLOT > NODES_SPEED_SLOT) MAX = NODES_ANGLE_SLOT;
 
 	//numberOfAngleValues should never be <= 0
 	return numberOfAngleValues > 0 ? numberOfSpeedValues / (float) numberOfAngleValues : 0;
@@ -905,14 +905,13 @@ float Trace::average_relative_speed() {
 		v2 = 0.0; count = 0;
 		for (i = 0; i < NODE_NUM; i++)
 			for (j = i + 1; j < NODE_NUM; j++)
-				if (distance_i_j(i,j,t) <= 2 * RADIUS) {
+				if (distance_i_j(i, j, t) <= 2 * RADIUS) {
 					v1 = relative_speed(trace[i][t].speed, trace[i][t].angle,
 															trace[j][t].speed, trace[j][t].angle);
 					v2 += v1;
 					count++;
 				}
-		if(count!=0)
-			v3 = v3 + v2 / (float)count;
+		if(count!=0)	v3 = v3 + v2 / (float)count;
 	}
 	return v3 / (float)TIME_SLOT;
 }
@@ -934,8 +933,7 @@ float Trace::degree_of_temporal_dependence() {
 					cor2_old += cor1_old;
 					count_old++;
 				}
-		if (count_old!=0)
-			cor3_old = cor3_old + cor2_old / (float)count_old;
+		if (count_old!=0)	cor3_old = cor3_old + cor2_old / (float)count_old;
 	}
 	DTD = cor3_old / (float)NODE_NUM;
 	return DTD;
@@ -951,9 +949,9 @@ float Trace::improved_degree_of_temporal_dependence() {
 	for (i = 0; i < NODE_NUM; i++) {
 		cor2 = 0.0; count = 0;
 		for (t = 1; t < TIME_SLOT; t++){
-			if (velocity_has_changed(i,t)) {
+			if (velocity_has_changed(i, t)) {
 				cor1 = basic_correlation_positive(trace[i][t].speed, trace[i][t].angle,
-																					trace[i][t-1].speed, trace[i][t-1].angle);
+																					trace[i][t - 1].speed, trace[i][t - 1].angle);
 				cor2 += cor1;
 				temporalCorrelations[i][t] = cor1; //this is not used yet
 				count++;
@@ -963,8 +961,7 @@ float Trace::improved_degree_of_temporal_dependence() {
 			//	cor1 = compute_mean_basic_temporal_correlation(i,t-1);
 			//}
 		}
-		if (count != 0)
-			cor3 = cor3 + cor2 / (float)count;
+		if (count != 0)	cor3 = cor3 + cor2 / (float)count;
 	}
 	IDTD = cor3 / (float)NODE_NUM;
 	return IDTD;
@@ -987,224 +984,160 @@ float Trace::degree_of_spatial_dependence() {
 					cor2 += cor1;
 					count_old++;
 				}
-		if (count_old != 0)
-			cor3 = cor3 + cor2 / (float)count_old;
+		if (count_old != 0)	cor3 = cor3 + cor2 / (float)count_old;
 	}
 	return cor3 / (float)TIME_SLOT;
 }
 
 //Improved Degree of Spatial Dependence - IDSD
-float Trace::improved_degree_of_spatial_dependence()
-{
-	float cor1=0.0,cor2=0.0,cor3=0.0;
-	int t,i,j;
-	int count=0;
+float Trace::improved_degree_of_spatial_dependence() {
+	float cor1 = 0.0, cor2 = 0.0, cor3 = 0.0;
+	int t, i, j;
+	int count = 0;
 	float IDSD = 0.0;
 
 	//clean array estimatedIDSD
-	for(i=0;i<NODE_NUM;i++)
-		for(j=i+1;j<NODE_NUM;j++)
-			for(t=0;t<TIME_SLOT;t++)
+	for (i = 0; i < NODE_NUM; i++)
+		for (j = i + 1; j < NODE_NUM; j++)
+			for (t = 0; t < TIME_SLOT; t++)
 				estimatedIDSD[i][j][t] = 0.0;
 
-	for(t=0;t<TIME_SLOT;t++)
-	{
-		cor2=0.0; count=0;
-
-		for(i=0;i<NODE_NUM;i++)
-
-			for(j=i+1;j<NODE_NUM;j++){
-
-				if(distance_i_j(i,j,t) <= 2*RADIUS){
-
-					if (is_stopped(i,t) || is_stopped(j,t)){
-
-						if (TIMEPAUSE>0) {
-							cor1 = SMAverage(i,j,t, TIMEPAUSE/10);
-						}
-						else {
-							cor1 = DSDijt(trace[i][t].speed,trace[i][t].angle,
-											trace[j][t].speed,trace[j][t].angle);
-						}
+	for (t = 0; t < TIME_SLOT; t++) {
+		cor2 = 0.0; count = 0;
+		for (i = 0; i < NODE_NUM; i++)
+			for (j = i + 1; j < NODE_NUM; j++)
+				if (distance_i_j(i, j, t) <= 2 * RADIUS) {
+					if (is_stopped(i, t) || is_stopped(j, t)) {
+						if (TIMEPAUSE > 0) cor1 = SMAverage(i, j, t, TIMEPAUSE / 10);
+						else cor1 = DSDijt(trace[i][t].speed, trace[i][t].angle,
+															 trace[j][t].speed, trace[j][t].angle);
+					} else {
+						cor1 = DSDijt(trace[i][t].speed, trace[i][t].angle,
+													trace[j][t].speed, trace[j][t].angle);
 					}
-					else{
-						cor1 = DSDijt(trace[i][t].speed,trace[i][t].angle,
-							trace[j][t].speed,trace[j][t].angle);
-					}
-
 					estimatedIDSD[i][j][t] = cor1;
 					cor2 += cor1;
 					count++;
-				}
-				else{
-					//if distance > 2R
+				} else { //if distance > 2R
 					estimatedIDSD[i][j][t] = 0.0;
 				}
-			}
-
-		if(count!=0)
-			cor3 = cor3 + cor2/(float)count;
+		if (count!=0) cor3 = cor3 + cor2/(float)count;
 	}
 
 	IDSD = cor3 / (float)TIME_SLOT;
 	return IDSD;
-
 }
 
 //High Improved Degree of Spatial Dependence - HIDSD
-float Trace::high_improved_degree_of_spatial_dependence()
-{
-
-	float cor1=0.0,cor2=0.0,cor3=0.0;
-	int t,i,j;
-	int count=0;
+float Trace::high_improved_degree_of_spatial_dependence() {
+	float cor1 = 0.0, cor2 = 0.0, cor3 = 0.0;
+	int t, i, j;
+	int count = 0;
 	float IDSD = 0.0;
 
 	//clean array estimatedHIDSD
-		for(i=0;i<NODE_NUM;i++)
-			for(j=i+1;j<NODE_NUM;j++)
-				for(t=0;t<TIME_SLOT;t++)
-					estimatedHIDSD[i][j][t] = 0.0;
+	for (i = 0; i < NODE_NUM; i++)
+		for (j = i + 1; j < NODE_NUM; j++)
+			for (t = 0; t < TIME_SLOT; t++)
+				estimatedHIDSD[i][j][t] = 0.0;
 
 	//set initial pause time period correlations (undetermined value)
-		t=0;
-		for(i=0;i<NODE_NUM;i++)
-			for(j=i+1;j<NODE_NUM;j++)
-				while(distance_i_j(i,j,t) <= RADIUS && is_stopped(i,t) && is_stopped(j,t)){
-					estimatedHIDSD[i][j][t] = NIL;
-					t++;
-				}
+	t = 0;
+	for (i = 0; i < NODE_NUM; i++)
+		for (j = i + 1; j <NODE_NUM; j++)
+			while (distance_i_j(i, j, t) <= RADIUS && is_stopped(i, t) && is_stopped(j, t))
+				{ estimatedHIDSD[i][j][t] = NIL; t++; }
 
-	for(t=0;t<TIME_SLOT;t++)
-	{
-		cor2=0.0; count=0;
-
-		for(i=0;i<NODE_NUM;i++){
-
-			for(j=i+1;j<NODE_NUM;j++){
-
-				if(distance_i_j(i,j,t) <= 2*RADIUS && estimatedIDSD[i][j][t] != NIL){
-
+	for (t = 0; t < TIME_SLOT; t++) {
+		cor2 = 0.0; count = 0;
+		for (i = 0; i < NODE_NUM; i++)
+			for (j = i + 1; j < NODE_NUM; j++)
+				if (distance_i_j(i, j, t) <= 2 * RADIUS && estimatedIDSD[i][j][t] != NIL) {
 					//We should remove the initial stationary period since it is impossible to ensure whether there is or no correlation
-
-					if (!is_stopped(i,t) && !is_stopped(j,t)){
+					if (!is_stopped(i, t) && !is_stopped(j, t)) {
 						//CASE 1: both nodes are moving
-						cor1 = EWMAverage(i,j,t); //we have the actual SD value and past values
-					}
-					else if (TIMEPAUSE<=0){ //results the same as DSD
-						cor1 = DSDijt(trace[i][t].speed,trace[i][t].angle,
-									  trace[j][t].speed,trace[j][t].angle);
-					}
-					else if ( (is_stopped(i,t) && !is_stopped(j,t)) || (!is_stopped(i,t) && is_stopped(j,t)) ){
+						cor1 = EWMAverage(i, j, t); //we have the actual SD value and past values
+					}	else if (TIMEPAUSE <= 0) { //results the same as DSD
+						cor1 = DSDijt(trace[i][t].speed, trace[i][t].angle,
+									  			trace[j][t].speed, trace[j][t].angle);
+					}	else if ((is_stopped(i, t) && !is_stopped(j, t)) || (!is_stopped(i, t) && is_stopped(j, t)) ) {
 						//CASE 2: one node is moving and the other is stationary
-						cor1 = WMAverage(i,j,t, TIMEPAUSE/10); //we only have past SD values
+						cor1 = WMAverage(i, j, t, TIMEPAUSE / 10); //we only have past SD values
 
 						//O TIMEPAUSE sera obtido por cada dispositivo e compartilhado, sempre que o veiculo parar o novo valor eh incrementado
 						//para calcular o ATP basta dividir o tempo total de pausa pelo tempo em que o sistema foi ligado.
 						//TODO: considerar se o no se aproxima ou se afasta do outro? Caso se aproxime aumenta a correlacao, caso se afaste diminui?
-					}
-					else {
+					}	else {
 						//CASE 3: both nodes are stationary
-						cor1 = WMAverage(i,j,t, TIMEPAUSE/10);  //we only have past SD values
+						cor1 = WMAverage(i, j, t, TIMEPAUSE / 10);  //we only have past SD values
 					}
-
 					estimatedHIDSD[i][j][t] = cor1; //keeps the last correlations between the nodes i,j
-					if (estimatedHIDSD[i][j][t] != NIL){ //considera apenas os valores validos
-						cor2 += cor1;
-						count++;
-					}
-				}
-				else{
-					//if distance > 2R
-					estimatedHIDSD[i][j][t] = 0.0;
-				}
-			}
-		}
-
-		if(count!=0)
-			cor3 = cor3 + cor2/(float)count;
+					if (estimatedHIDSD[i][j][t] != NIL) { cor2 += cor1; count++; } //considera apenas os valores validos
+				}	else estimatedHIDSD[i][j][t] = 0.0; //if distance > 2R
+		if (count != 0) cor3 = cor3 + cor2 / (float)count;
 	}
-
 	//int numberofpairs = NODE_NUM * (NODE_NUM -1) / 2;
-
 	IDSD = cor3 / (float)TIME_SLOT;
 	return IDSD;
-
 }
-
 
 //METHOD 1: Simple Moving Average (MSS) (the same as arithmetic mean)
 //This function is only called by IDSD()
-float Trace::SMAverage(int i, int j, int t, int periods){
-
+float Trace::SMAverage(int i, int j, int t, int periods) {
 	float cor = 0.0;
-
-	for (int k=1;(k<=periods) && (t-k>=0) && estimatedIDSD[i][j][t]!=NIL;k++){
-			cor += estimatedIDSD[i][j][t-k];
-	}
-
+	for (int k = 1; k <= periods && t - k >= 0 && estimatedIDSD[i][j][t] != NIL; k++)
+		cor += estimatedIDSD[i][j][t-k];
 	return cor/periods;
 }
 
 //METHOD 2: Weighted Moving Average (WMA)
 //This function is only called by HIDSD()
-float Trace::WMAverage(int i, int j, int t, int periods){
-
+float Trace::WMAverage(int i, int j, int t, int periods) {
 	float cor = 0.0;
 	int count = 0;
-
 	//check if nodes are stationary since simulation start; if yes, correlation should be undefined (-99)
-	if (is_stopped(i,t) && is_stopped(j,t) && (t==0 || estimatedHIDSD[i][j][t-1] == NIL)){
+	if (is_stopped(i, t) && is_stopped(j, t) && (t == 0 || estimatedHIDSD[i][j][t - 1] == NIL))
 		return NIL;
-	}
 
-	for (int k=0; (k<periods) && (t-k>0); k++){ //vai ao passado ate onde havia correlacao valida
-		if (estimatedHIDSD[i][j][t-k-1] != NIL){
-			cor += (periods-k)*estimatedHIDSD[i][j][t-k-1]; //peso decrescente (PA com razao = 1)
-			count += periods-k; // N(N+1)/2 soma dos termos de uma PA 1..periods
-		}
-		else break;
-	}
-
-	return count == 0 ? 0.0 : cor/(float)count;
+	for (int k = 0; k < periods && t - k > 0; k++) //vai ao passado ate onde havia correlacao valida
+		if (estimatedHIDSD[i][j][t - k - 1] != NIL) {
+			cor += (periods - k) * estimatedHIDSD[i][j][t - k - 1]; //peso decrescente (PA com razao = 1)
+			count += periods - k; // N(N+1)/2 soma dos termos de uma PA 1..periods
+		}	else break;
+	return count == 0 ? 0.0 : cor / (float)count;
 }
 
 //METHOD 3: Exponential Weighted Moving Average (EWMA)
 //This function is only called by HIDSD()
-float Trace::EWMAverage(int i, int j, int t){
-
+float Trace::EWMAverage(int i, int j, int t) {
 	// variante da EWMA, onde alfa pode ser igual a 1/N ou 2/(N+1) (N pode ser o tempo de pausa medio)
 	float alfa = 0.125;
-
-	if (t==0 || (estimatedHIDSD[i][j][t-1] == NIL)){ //there is no past values
-		return DSDijt(trace[i][t].speed,trace[i][t].angle,trace[j][t].speed,trace[j][t].angle);
-	}
-	else {
+	if (t == 0 || (estimatedHIDSD[i][j][t - 1] == NIL)) //there is no past values
+		return DSDijt(trace[i][t].speed, trace[i][t].angle, trace[j][t].speed, trace[j][t].angle);
+	else return (1 - alfa) * estimatedHIDSD[i][j][t - 1] + alfa *
+							DSDijt(trace[i][t].speed, trace[i][t].angle, trace[j][t].speed, trace[j][t].angle);//[Roberts (1959)]
 		/* Uma variante eh usar DSD(i,j,t-1) [Hunter (1986)] ao inves de DSD(i,j,t) [Roberts (1959)] como valor atual da correlacao.
 		 * => http://www.itl.nist.gov/div898/handbook/pmc/section4/pmc431.htm
 		 */
 		//return (1-alfa)*estimatedHIDSD[i][j][t-1] + alfa*DSDijt(trace[i][t-1].speed,trace[i][t-1].angle,trace[j][t-1].speed,trace[j][t-1].angle);//[Hunter (1986)]
-		return (1-alfa)*estimatedHIDSD[i][j][t-1] + alfa*DSDijt(trace[i][t].speed,trace[i][t].angle,trace[j][t].speed,trace[j][t].angle);//[Roberts (1959)]
-	}
 }
 
 
-float Trace::compute_mean_basic_temporal_correlation(int i, int t){
+float Trace::compute_mean_basic_temporal_correlation(int i, int t) {
 	float cor = 0.0;
 	int iterations = 10; //number of time steps to go back in the history of past movements
 	int count = 0;
 
-	for (int k=0;(k<iterations) && (t-k>=0);k++){
-		if(velocity_has_changed(i,t-k)){
+	for (int k = 0; k < iterations && t - k >= 0; k++)
+		if (velocity_has_changed(i,t-k)) {
 			cor += temporalCorrelations[i][t-k]; //ja foi preenchido esse array???
 			count++;
 		}
-	}
 
 	return count==0 ? 0.0 : cor/(float)count;
 }
 
-void Trace::print_spatial_dependence_statistics(int i, int j){
+void Trace::print_spatial_dependence_statistics(int i, int j) {
 	//based on average_distance() and within_coverage() functions
 	float distance = 0.0;
 	float all_distance = 0.0;
@@ -1214,110 +1147,80 @@ void Trace::print_spatial_dependence_statistics(int i, int j){
 	int count_both_stationary = 0;
 	int count_distance_greater2R = 0;
 
-	for(int t=0;t<TIME_SLOT;t++){
-		distance = dist(trace[i][t].x,trace[i][t].y,
-						 trace[j][t].x,trace[j][t].y);
+	for (int t = 0; t < TIME_SLOT; t++){
+		distance = dist(trace[i][t].x, trace[i][t].y,
+						 				trace[j][t].x, trace[j][t].y);
 		all_distance += distance;
-
-		if(distance_i_j(i,j,t) <= 2*RADIUS){
-
-			if (distance <= RADIUS){
-				count_coverages += 1;
-			}
-
-			if (!is_stopped(i,t) && !is_stopped(j,t)){
-				//CASE 1: both nodes are moving
-				count_both_moving++;
-			}
-			else if ( (is_stopped(i,t) && !is_stopped(j,t)) || (!is_stopped(i,t) && is_stopped(j,t)) ){
-				//CASE 2: one node is moving and the other is stationary
-				count_one_moving++;
-			}
-			else {
-				//CASE 3: both nodes are stationary
-				count_both_stationary++;
-			}
-
-		} else {
-			count_distance_greater2R++;
-		}
-
+		if (distance_i_j(i, j, t) <= 2 * RADIUS) {
+			if (distance <= RADIUS)	count_coverages += 1;
+			if (!is_stopped(i, t) && !is_stopped(j, t)) count_both_moving++; //CASE 1: both nodes are moving
+			else if ((is_stopped(i,t) && !is_stopped(j,t)) ||
+							 (!is_stopped(i,t) && is_stopped(j,t)))	count_one_moving++; //CASE 2: one node is moving and the other is stationary
+			else count_both_stationary++; //CASE 3: both nodes are stationary
+		} else count_distance_greater2R++;
 	}
-	float average_coverage = (float)count_coverages / (float)TIME_SLOT;
-	float average_distance = all_distance / (float)TIME_SLOT;
+	// float average_coverage = count_coverages / (float)TIME_SLOT; Not used
+	// float average_distance = all_distance / (float)TIME_SLOT; Not used
 
 	//magic formula
 	printf("count_distance_greater2R = %d\n", count_distance_greater2R);
 	printf("count_both_moving = %d\n", count_both_moving);
 	printf("count_one_moving = %d\n", count_one_moving);
 	printf("count_both_stationary = %d\n", count_both_stationary);
-
 }
 
 
-void Trace::average_std_distances(){
-
+void Trace::average_std_distances() {
 	//average measurement
 	float sum = 0.0;
-	for(int i=0; i<NODE_NUM;i++){
-		for(int j=i+1; j<NODE_NUM;j++){
+	for (int i = 0; i < NODE_NUM; i++)
+		for (int j = i + 1; j < NODE_NUM; j++) {
 			sum = 0.0;
-			for(int t=0;t<TIME_SLOT;t++){
-				sum += distances[i][j][t];
-			}
-			average_distances[i][j] = sum/TIME_SLOT;
-			if (i==0 && j==1)
-			printf("average_distances[%d][%d]= %f\n", i, j, average_distances[i][j]);
+			for (int t = 0; t < TIME_SLOT; t++) sum += distances[i][j][t];
+			average_distances[i][j] = sum / TIME_SLOT;
+			if (i == 0 && j == 1)
+				printf("average_distances[%d][%d]= %f\n", i, j, average_distances[i][j]);
 		}
-	}
 	//std measurement
 	float variation = 0.0;
 	sum = 0.0;
-	for(int i=0; i<NODE_NUM;i++){
-		for(int j=i+1; j<NODE_NUM;j++){
-			for(int t=0;t<TIME_SLOT;t++){
+	for (int i = 0; i < NODE_NUM; i++)
+		for (int j = i + 1; j < NODE_NUM; j++) {
+			for (int t = 0; t < TIME_SLOT; t++){
 				variation = distances[i][j][t] - average_distances[i][j];
-				variation = variation*variation;
+				variation = variation * variation;
 				sum += variation;
 			}
-			std_distances[i][j] = sqrt(sum/TIME_SLOT);
-			if (i==0 && j==1)
+			std_distances[i][j] = sqrt(sum / TIME_SLOT);
+			if (i == 0 && j == 1)
 			printf("std_distances[%d][%d]= %f\n", i, j, std_distances[i][j]);
 		}
-	}
 }
 
-float Trace::degree_of_node_proximity(){
-
+float Trace::degree_of_node_proximity() {
 	float sum_distances_all = 0.0;
 	float average_distance_all = 0.0;
 	int count = 0;
 
-	for(int i=0; i<NODE_NUM;i++){
-		for(int j=i+1; j<NODE_NUM;j++){
-			sum_distances_all += average_distance(i,j) / RADIUS; //distances[i][j] is filled
+	for (int i = 0; i < NODE_NUM; i++)
+		for (int j = i + 1; j < NODE_NUM; j++) {
+			sum_distances_all += average_distance(i, j) / RADIUS; //distances[i][j] is filled
 			count += 1;
 		}
-	}
 	average_distance_all = sum_distances_all / (float)count;
-	float DNP = 1 - average_distance_all/maximum_average_distance();
-
+	float DNP = 1 - average_distance_all / maximum_average_distance();
 	return DNP;
 }
 
-float Trace::improved_degree_of_node_proximity(){
-
+float Trace::improved_degree_of_node_proximity() {
 	float next_CV = 0.0;
 	float sum_CVs = 0.0;
-	for(int i=0; i<NODE_NUM;i++){
-		for(int j=i+1; j<NODE_NUM;j++){
-			next_CV = coefficient_of_variation(average_distances[i][j],std_distances[i][j]);
+	for (int i = 0; i < NODE_NUM; i++)
+		for (int j = i + 1; j < NODE_NUM; j++) {
+			next_CV = coefficient_of_variation(average_distances[i][j], std_distances[i][j]);
 			sum_CVs += next_CV;
-			if (i==2)
-			printf("CV[%d][%d]=%f \n",i,j,next_CV);
+			if (i==2) printf("CV[%d][%d]=%f \n",i,j,next_CV);
 		}
-	}
-
 	return sum_CVs;
 }
 
@@ -1341,79 +1244,59 @@ float Trace::improved_degree_of_node_proximity(){
 
 }*/
 
-float Trace::maximum_average_distance(){
-
-	return sqrt(SCENARIO_LENGTH*SCENARIO_LENGTH + SCENARIO_WIDTH*SCENARIO_WIDTH)/(2*RADIUS);
+float Trace::maximum_average_distance() {
+	return sqrt(SCENARIO_LENGTH * SCENARIO_LENGTH + SCENARIO_WIDTH * SCENARIO_WIDTH) / (2 * RADIUS);
 }
 
 //show the x-axis and y-axis interval (min and max)
-void Trace::xy_axis_interval(){
-
+void Trace::xy_axis_interval() {
 	float xmin = trace[0][0].x;
 	float ymin = trace[0][0].y;
 	float xmax = trace[0][0].x;
 	float ymax = trace[0][0].y;
-
-	for(int t=0; t<TIME_SLOT; t++){
-		for(int i=0; i<NODE_NUM;i++){
-
-			if (trace[i][t].x < xmin){
-				xmin = trace[i][t].x;
-			} else if (trace[i][t].x > xmax){
-				xmax = trace[i][t].x;
-			}
-			if (trace[i][t].y < ymin){
-				ymin = trace[i][t].y;
-			} else if (trace[i][t].y > ymax){
-				ymax = trace[i][t].y;
-			}
+	for (int t = 0; t < TIME_SLOT; t++)
+		for (int i = 0; i < NODE_NUM; i++) {
+			if (trace[i][t].x < xmin)	xmin = trace[i][t].x;
+			else if (trace[i][t].x > xmax) xmax = trace[i][t].x;
+			if (trace[i][t].y < ymin)	ymin = trace[i][t].y;
+			else if (trace[i][t].y > ymax) ymax = trace[i][t].y;
 		}
-	}
-
 	printf("x-axis interval=[%f, %f]\n",xmin,xmax);
 	printf("y-axis interval=[%f, %f]\n",ymin,ymax);
 }
 
-float Trace::average_tripLength(){
-
+float Trace::average_tripLength() {
 	float avg = getAverageNotZero(nodesTripLengths,NODES_TRIP_LENGTH_SLOT);
 	//float std = getStdNotZero(nodesTripLengths,avg,NODE_NUM);
-
 	return avg / RADIUS;
 }
 
-float Trace::average_pathLength(){
-
+float Trace::average_pathLength() {
 	float avg = getAverageNotZero(nodesPathLengths,NODES_PATH_LENGTH_SLOT);
 	//float std = getStdNotZero(nodesTripLengths,avg,NODE_NUM);
-
 	return avg / RADIUS;
 }
 
-float Trace::degreeOfSpatialDistribution(){
-
+float Trace::degreeOfSpatialDistribution() {
 	int t,i,x,y;
 
 	GRID_WIDTH = NODE_NUM;
 	GRID_LENGTH = NODE_NUM;
-	CELL_WIDTH = (int) SCENARIO_WIDTH/(GRID_WIDTH);
-	CELL_LENGTH = (int) SCENARIO_LENGTH/(GRID_LENGTH);
+	CELL_WIDTH = (int) SCENARIO_WIDTH / (GRID_WIDTH);
+	CELL_LENGTH = (int) SCENARIO_LENGTH / (GRID_LENGTH);
 
 	//1) initialize the cells matrix
-	for (x=0; x < GRID_WIDTH; x++){
-		for (y=0; y < GRID_LENGTH; y++){
-			cells[x][y]=0; //means no node inside this cell
-		}
-	}
+	for (x = 0; x < GRID_WIDTH; x++)
+		for (y = 0; y < GRID_LENGTH; y++)
+			cells[x][y] = 0; //means no node inside this cell
 
 	//2) fill the cells matrix
-	for(t=0; t<TIME_SLOT; t++){
-		for (i=0; i < NODE_NUM; i++){
+	for (t = 0; t < TIME_SLOT; t++)
+		for (i = 0; i < NODE_NUM; i++) {
 			x = trace[i][t].x / CELL_WIDTH;
 			y = trace[i][t].y / CELL_LENGTH;
 			cells[x][y]++;
 		}
-	}
 
 	/*printf("BEFORE PROCESSING: \n");
 		printf("LOCATION MATRIX AT TIME %d: \n", t);
@@ -1431,20 +1314,16 @@ float Trace::degreeOfSpatialDistribution(){
 	//3) calculates the sum of all lines and columns of the grid (inserting the values into the last line and column of the grid)
 
 	//filling the last line with the sum of all values
-	for (x=0; x < GRID_WIDTH; x++){
-		sumY=0;
-		for (y=0; y < GRID_LENGTH; y++){
+	for (x = 0; x < GRID_WIDTH; x++) {
+		for (sumY = y = 0; y < GRID_LENGTH; y++)
 			sumY += cells[x][y];
-		}
 		cells[x][GRID_LENGTH] = sumY;
 		//if (t>0) cells[t][x][GRID_LENGTH] = cells[t-1][x][GRID_LENGTH] + sumY;
 	}
 	//filling the last column with the sum of all values
-	for (y=0; y < GRID_LENGTH; y++){
-		sumX=0;
-		for (x=0; x < GRID_WIDTH; x++){
+	for (y = 0; y < GRID_LENGTH; y++) {
+		for (sumX = x = 0; x < GRID_WIDTH; x++)
 			sumX += cells[x][y];
-		}
 		cells[GRID_WIDTH][y] = sumX;
 		//if (t>0) cells[t][GRID_WIDTH][y] = cells[t-1][GRID_WIDTH][y] + sumX;
 	}
@@ -1464,91 +1343,76 @@ float Trace::degreeOfSpatialDistribution(){
 	float deviation = 0;
 	float deviationSum = 0;
 
-	for (x=0; x < GRID_WIDTH; x++){
-		deviation = abs (cells[x][GRID_LENGTH] - TIME_SLOT);
+	for (x = 0; x < GRID_WIDTH; x++) {
+		deviation = abs(cells[x][GRID_LENGTH] - TIME_SLOT);
 		deviationSum += deviation;
 	}
-	for (y=0; y < GRID_LENGTH; y++){
+	for (y = 0; y < GRID_LENGTH; y++) {
 		deviation = abs (cells[GRID_WIDTH][y] - TIME_SLOT);
 		deviationSum += deviation;
 	}
-
-	float MAX_DEVIATION = 4*(NODE_NUM - 1)*TIME_SLOT;
-
-	degreeSpatialDistribution = 1 - log(deviationSum)/log(MAX_DEVIATION);
-
+	float MAX_DEVIATION = 4 * (NODE_NUM - 1) * TIME_SLOT;
+	degreeSpatialDistribution = 1 - log(deviationSum) / log(MAX_DEVIATION);
 	return degreeSpatialDistribution;
-
 }
 
-float Trace::emptyCells(){
-
+float Trace::emptyCells() {
 	float emptyCells = 0;
-	for (int x=0; x < GRID_WIDTH; x++){
-		for (int y=0; y < GRID_LENGTH; y++){
-			if(cells[x][y] == 0){
-				emptyCells++;
-			}
-		}
-	}
-
-	return emptyCells/(GRID_WIDTH*GRID_LENGTH);
+	for (int x = 0; x < GRID_WIDTH; x++)
+		for (int y = 0; y < GRID_LENGTH; y++)
+			if (cells[x][y] == 0)	emptyCells++;
+	return emptyCells / (GRID_WIDTH * GRID_LENGTH);
 }
 
 //Position Density Variance metric
 //Authors of the paper: 'Feature selection for user motion pattern recognition in mobile networks'
-float Trace::positionDensityVariance(){
-
+float Trace::positionDensityVariance() {
 	float average = 0;
-	float PDV;
-
-	for (int x=0; x < GRID_WIDTH; x++){
-		for (int y=0; y < GRID_LENGTH; y++){
+	// float PDV; Not used
+	for (int x = 0; x < GRID_WIDTH; x++)
+		for (int y = 0; y < GRID_LENGTH; y++)
 			average += cells[x][y];
-		}
-	}
-	average = average/(GRID_WIDTH*GRID_LENGTH);
-
+	average = average / (GRID_WIDTH * GRID_LENGTH);
 	//PDV
+	//What shoud it return?
+	return average;
 }
 
-void Trace::createIdentityVector(int size){
-	int vector[NODE_NUM];
-	for (int i = 0; i < NODE_NUM; ++i) {
-		vector[i]=1;
-	}
-}
+// void Trace::createIdentityVector(int size) {
+// 	int vector[NODE_NUM];
+// 	for (int i = 0; i < NODE_NUM; ++i)
+// 		vector[i] = 1;
+// }
 
-
-void Trace::print_DSD(int i, int j, int start, int end){
+void Trace::print_DSD(int i, int j, int start, int end) {
 	float media = 0.0;
 	int count = 0;
-	for(int t=start;t<end;t++){
+	for (int t = start; t < end; t++) {
 		printf("%f\n", DSD[i][j][t]);
 		media += DSD[i][j][t];
 		count++;
 	}
-	printf("DSD = %f\n", media/(float)count);
+	printf("DSD = %f\n", media / (float)count);
 }
 
-void Trace::print_IDSD(int i, int j, int start, int end){
+void Trace::print_IDSD(int i, int j, int start, int end) {
 	float media = 0.0;
 	int count = 0;
-	for(int t=start;t<end;t++){
+	for (int t = start; t < end; t++) {
 		printf("%f\n", estimatedIDSD[i][j][t]);
 		media += estimatedIDSD[i][j][t];
 		count++;
 	}
-	printf("IDSD = %f\n", media/(float)count);
+	printf("IDSD = %f\n", media / (float)count);
 }
 
-void Trace::print_HIDSD(int i, int j, int start, int end){
+void Trace::print_HIDSD(int i, int j, int start, int end) {
 	float media = 0.0;
 	int count = 0;
 	//printf("%f\n", 0.11111111111111111);
-	for(int t=start;t<end;t++){
+	for (int t = start; t < end; t++) {
 		printf("%f\n", estimatedHIDSD[i][j][t]);
-		if (estimatedHIDSD[i][j][t] != NIL){ //desconsidera os valores iniciais de pausa (correlation undefined)
+		if (estimatedHIDSD[i][j][t] != NIL) { //desconsidera os valores iniciais de pausa (correlation undefined)
 			media += estimatedHIDSD[i][j][t];
 			count++;
 		}
@@ -1556,70 +1420,59 @@ void Trace::print_HIDSD(int i, int j, int start, int end){
 	printf("HIDSD = %f\n", media/(float)count);
 }
 
-void Trace::print_SpatialMetrics(int i, int j, int start, int end){
-
+void Trace::print_SpatialMetrics(int i, int j, int start, int end) {
 	printf("DSD   IDSD   HIDSD\n");
-	for(int t=start;t<end;t++){
+	for (int t = start; t < end; t++)
 		printf("%d %f   %f   %f\n", t, DSD[i][j][t], estimatedIDSD[i][j][t], estimatedHIDSD[i][j][t]);
-	}
 }
 
-void Trace::print_distance_between_nodes(){
-	for(int i=0; i<NODE_NUM;i++){
-		for(int j=i+1; j<NODE_NUM;j++){
-			for(int t=0;t<TIME_SLOT;t++){
-				printf("distances[%d][%d][%d]%% = %f\n", i,j,t,distances[i][j][t]);
-			}
-		}
-	}
+void Trace::print_distance_between_nodes() {
+	for(int i = 0; i < NODE_NUM; i++)
+		for(int j = i + 1; j < NODE_NUM; j++)
+			for(int t = 0; t < TIME_SLOT; t++)
+				printf("distances[%d][%d][%d]%% = %f\n", i, j, t, distances[i][j][t]);
 }
 
-float Trace::average_distance(){
+float Trace::average_distance() {
 	float average_distance_all = 0.0;
 	int count = 0;
-
-	for(int i=0; i<NODE_NUM;i++){
-		for(int j=i+1; j<NODE_NUM;j++){
-			average_distance_all += average_distance(i,j) / RADIUS;
+	for (int i = 0; i < NODE_NUM; i++)
+		for (int j = i + 1; j < NODE_NUM; j++) {
+			average_distance_all += average_distance(i, j) / RADIUS;
 			count += 1;
 		}
-	}
 	return average_distance_all / (float)count;
 }
 
-
-float Trace::average_distance(int i, int j){
+float Trace::average_distance(int i, int j) {
 	float distance = 0.0;
 	float all_distances = 0.0;
-	for(int t=0;t<TIME_SLOT;t++){
-		distance = dist(trace[i][t].x,trace[i][t].y,
-						 trace[j][t].x,trace[j][t].y);
+	for (int t = 0; t < TIME_SLOT; t++) {
+		distance = dist(trace[i][t].x, trace[i][t].y,
+						 				trace[j][t].x, trace[j][t].y);
 		all_distances += distance;
 		distances[i][j][t] = distance / RADIUS;
 	}
 	return all_distances / (float)TIME_SLOT;
 }
 
-float Trace::average_coverage(){
+float Trace::average_coverage() {
 	int count = 0;
 	float average_coverage_all = 0.0;
-
-	for(int i=0; i<NODE_NUM;i++){
-		for(int j=i+1; j<NODE_NUM;j++){
-			average_coverage_all += average_coverage_i_j(i,j);
+	for (int i = 0; i < NODE_NUM; i++)
+		for (int j = i + 1; j < NODE_NUM; j++) {
+			average_coverage_all += average_coverage_i_j(i, j);
 			count += 1;
 		}
-	}
 	return average_coverage_all / (float)count;
 }
 
-float Trace::average_coverage_i_j(int i, int j){
+float Trace::average_coverage_i_j(int i, int j) {
 	int count = 0;
-	for(int t=0;t<TIME_SLOT;t++){
-		if (dist(trace[i][t].x,trace[i][t].y,
-				 trace[j][t].x,trace[j][t].y) <= RADIUS){
+	for(int t = 0; t < TIME_SLOT; t++){
+		if (dist(trace[i][t].x, trace[i][t].y,
+				 		 trace[j][t].x, trace[j][t].y) <= RADIUS)
 			count += 1;
-		}
 	}
 	return (float)count / (float)TIME_SLOT;
 }
@@ -1629,70 +1482,50 @@ float Trace::distance_i_j(int i, int j, int t){
 	float y0 = trace[i][t].y;
 	float x1 = trace[j][t].x;
 	float y1 = trace[j][t].y;
-
 	return dist(x0,y0,x1,y1);
 }
 
-bool Trace::stop_trip(int i, int t){//node,time
-
-	if(t==0) return true;
-
+bool Trace::stop_trip(int i, int t) {//node,time
+	if (t == 0) return true;
 	//node i is stopped at time t iff at time t-1 it were at the same location
-	float x0 = trace[i][t-1].x;
+	float x0 = trace[i][t - 1].x;
 	float x1 = trace[i][t].x;
-	float y0 = trace[i][t-1].y;
+	float y0 = trace[i][t - 1].y;
 	float y1 = trace[i][t].y;
 
 	float nx1 = trace[i][t].next_x;
 	float ny1 = trace[i][t].next_y;
-
-	return (dist(x0,y0,x1,y1)==0.0 || dist(x1,y1,nx1,ny1)==0.0) ? true : false;
+	return dist(x0, y0, x1, y1) == 0.0 || dist(x1, y1, nx1, ny1) == 0.0 ? true : false;
 }
 
-bool Trace::is_stopped(int i, int t){//node,time
-
-	return (trace[i][t].speed==0) ? true : false;
+bool Trace::is_stopped(int i, int t) {//node,time
+	return (trace[i][t].speed == 0) ? true : false;
 }
 
-bool Trace::velocity_has_changed(int i, int t){
-
-	if (t==0) return false;
-
-	float speed0 = trace[i][t-1].speed;
+bool Trace::velocity_has_changed(int i, int t) {
+	if (t == 0) return false;
+	float speed0 = trace[i][t - 1].speed;
 	float speed1 = trace[i][t].speed;
-	float angle0 = trace[i][t-1].angle;
+	float angle0 = trace[i][t - 1].angle;
 	float angle1 = trace[i][t].angle;
 
 	if (equal_or_almost_equal(speed0,speed1) &&
-		equal_or_almost_equal(angle0,angle1)){
+		equal_or_almost_equal(angle0,angle1))
 		return false;
-	}
-	else {
-		return true;
-	}
+	else return true;
 }
 
-bool Trace::equal_or_almost_equal(float x, float y){
-	if (x==y){
-		return true;
-	} else if (x>y) {
-		return x-y < 0.01 ? true : false;
-	} else {
-		return y-x < 0.01 ? true : false;
-	}
+bool Trace::equal_or_almost_equal(float x, float y) {
+	if (x == y)	return true;
+	else if (x > y) return x - y < 0.01 ? true : false;
+	else return y - x < 0.01 ? true : false;
 }
 
-
-void Trace::test_is_stopped(int x, int y){
-	if (is_stopped(x,y)){
-		printf("Node %d",x);
-		printf(" is stopped at time %d\n",y);
-	}
+void Trace::test_is_stopped(int x, int y) {
+	if (is_stopped(x, y)) printf("Node %d is stopped at time %d\n", x, y);
 }
 
-void Trace::test_velocity_has_changed(int x, int y){
-	if (velocity_has_changed(x,y)){
-		printf("Node'velocity %d",x);
-		printf(" has changed at time %d\n",y);
-	}
+void Trace::test_velocity_has_changed(int x, int y) {
+	if (velocity_has_changed(x,y))
+		printf("Node'velocity %d has changed at time %d\n",x, y);
 }

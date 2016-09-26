@@ -7,8 +7,6 @@
 
 #ifndef MISC_H_
 #define MISC_H_
-
-
 #endif /* MISC_H_ */
 
 #define PI 3.1415926
@@ -16,17 +14,15 @@
 
 //-----------------------------------------------------------------//
 //Modular function
-int my_mod ( int i, int j)
-{	return int(float(i)/(float)j); }
+int my_mod ( int i, int j) {	return int(float(i) / (float) j); }
 
 //-----------------------------------------------------------------//
 //--------Calculate the distance between two nodes-----------------//
-float dist(float a0, float b0, float a1, float b1)
-{
-	float distx,disty;
-	distx=a0-a1;
-	disty=b0-b1;
-	return sqrt(distx*distx+disty*disty);
+float dist(float a0, float b0, float a1, float b1) {
+	float distx, disty;
+	distx = a0-a1;
+	disty = b0-b1;
+	return sqrt(distx * distx + disty * disty);
 }
 
 //-----------------------------------------------------------------//
@@ -222,4 +218,3 @@ double coefficient_of_variation(float mean, float std)
 {
 	return std/mean;
 }
-
