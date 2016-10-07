@@ -18,8 +18,7 @@ using namespace std;
 
 class Trace mytrace;
 
-int main(int argc, char* argv[])
-{
+int main(int argc, char* argv[]) {
 
 /*
 	char name[150];
@@ -142,55 +141,50 @@ int main(int argc, char* argv[])
 		exit(0);
 	}
 
-	strcpy(mobilityModel,argv[1]);
-	strcpy(name,argv[2]);
-	mytrace.RADIUS = atoi(argv[3]);
-	mytrace.TIMEPAUSE = atoi(argv[4]);
-	mytrace.SCENARIO_WIDTH = atoi(argv[5]);
-	mytrace.SCENARIO_LENGTH = atoi(argv[6]);
+	// strcpy(mobilityModel,argv[1]);
+	strcpy(name,argv[1]);
+	mytrace.RADIUS = atoi(argv[2]);
+	mytrace.TIMEPAUSE = atoi(argv[3]);
+	mytrace.SCENARIO_WIDTH = atoi(argv[4]);
+	mytrace.SCENARIO_LENGTH = atoi(argv[5]);
 
 
 	trace = new struct data * [NODE_NUM];
 	for(i = 0; i < NODE_NUM; i++)
 		trace[i] = new struct data[TIME_SLOT];
 
-	mytrace.initiate();
-	mytrace.read_trace(name);
-	mytrace.set_data();
-
-	//LINK-BASED METRICS
-	char link_distribution[] = "link_distribution.txt";
-	mytrace.cal_link(link_distribution);
-	printf("LC=%d\t",mytrace.total_link_change); //Number of link changes
-	printf("LD=%f\t",mytrace.avg_link_duration); //Link duration
-
-	//GRAPH-BASED METRICS
-	char node_degree_dist[] = "node_degree_dist.txt";
-	mytrace.cal_node_degree(node_degree_dist);
-	printf("ND=%f\t",mytrace.node_degree); //Node Degree
-
-	//Why is doing it again?
-	mytrace.cal_link(link_distribution);
-
-	//Calling it twice. Once here and other in prints
-	mytrace.degree_of_spatial_dependence();
-	mytrace.improved_degree_of_spatial_dependence();
-	mytrace.high_improved_degree_of_spatial_dependence();
-
-	//DISTANCE-BASED METRICS
-	printf("RS=%f\t",mytrace.average_relative_speed()); //Relative Speed
-	printf("DSD=%f\t",mytrace.degree_of_spatial_dependence()); //Degree of Spatial Dependence
-	printf("DTD=%f\t",mytrace.degree_of_temporal_dependence()); //Degree of Temporal Dependence
-	printf("IDSD=%f\t",mytrace.improved_degree_of_spatial_dependence()); //Degree of Spatial Dependence
-	printf("IDTD=%f\t",mytrace.improved_degree_of_temporal_dependence()); //Improved Degree of Temporal Dependence
-	printf("HIDSD=%f\t",mytrace.high_improved_degree_of_spatial_dependence()); //High Improved Degree of Spatial Dependence
-	printf("DNP=%f\t",mytrace.degree_of_node_proximity()); //Degree of Node Proximity
-	//Standard Deviation of Average Node Distance
-	printf("AC=%f\t",mytrace.average_coverage()); //Average Coverage
-
-
+	// mytrace.initiate();
+	// mytrace.read_trace(name);
+	// mytrace.set_data();
+	//
+	// //LINK-BASED METRICS
+	// char link_distribution[] = "link_distribution.txt";
+	// mytrace.cal_link(link_distribution);
+	// printf("LC=%d\t",mytrace.total_link_change); //Number of link changes
+	// printf("LD=%f\t",mytrace.avg_link_duration); //Link duration
+	//
+	// //GRAPH-BASED METRICS
+	// char node_degree_dist[] = "node_degree_dist.txt";
+	// mytrace.cal_node_degree(node_degree_dist);
+	// printf("ND=%f\t",mytrace.node_degree); //Node Degree
+	//
+	// //Why is doing it again?
+	// mytrace.cal_link(link_distribution);
+	//
+	// //Calling it twice. Once here and other in prints. There may be an depencence
+	// mytrace.degree_of_spatial_dependence();
+	// mytrace.improved_degree_of_spatial_dependence();
+	// mytrace.high_improved_degree_of_spatial_dependence();
+	//
+	// //DISTANCE-BASED METRICS
+	// printf("RS=%f\t",mytrace.average_relative_speed()); //Relative Speed
+	// printf("DSD=%f\t",mytrace.degree_of_spatial_dependence()); //Degree of Spatial Dependence
+	// printf("DTD=%f\t",mytrace.degree_of_temporal_dependence()); //Degree of Temporal Dependence
+	// printf("IDSD=%f\t",mytrace.improved_degree_of_spatial_dependence()); //Degree of Spatial Dependence
+	// printf("IDTD=%f\t",mytrace.improved_degree_of_temporal_dependence()); //Improved Degree of Temporal Dependence
+	// //printf("HIDSD=%f\t",mytrace.high_improved_degree_of_spatial_dependence()); //High Improved Degree of Spatial Dependence
+	// printf("DNP=%f\t",mytrace.degree_of_node_proximity()); //Degree of Node Proximity
+	// //Standard Deviation of Average Node Distance
+	// printf("AC=%f\t",mytrace.average_coverage()); //Average Coverage
 	return 0;
-
-
-
  }

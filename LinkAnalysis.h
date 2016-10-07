@@ -27,18 +27,17 @@
 
 //#define RADIUS 100
 
-float mean(int* pdf)
-{
+float mean(int* pdf) {
 	int i;
-	int sum1=0,sum2=0;
+	int sum1 = 0, sum2 = 0;
 	float avg;
 
-	for (i=0; i<TIME_SLOT+1;i++){
+	for (i = 0; i < TIME_SLOT + 1; i++){
 		sum1 = sum1 + pdf[i];
-		sum2 = sum2 + i*pdf[i];
+		sum2 = sum2 + i * pdf[i];
 	}
 
-	avg= (float)sum2/(float)sum1;
+	avg = (float)sum2 / (float)sum1;
 	return avg;
 }
 
@@ -46,8 +45,7 @@ float mean(int* pdf)
 
 //-----------------------------------------------------------------//
 
-struct data
-{
+struct data { //Dados do nodo(nó)
 	int id;
 	double time, start;
 	double x, y;
@@ -61,7 +59,6 @@ struct data** trace;
 double * ini_x = new double [NODE_NUM];
 double * ini_y = new double [NODE_NUM];
 
-
 struct point {
 	double x, y;
 	double time;
@@ -69,9 +66,7 @@ struct point {
 
 struct point** waypoints;
 
-
-class Trace
-{
+class Trace {
 	private:
 		//used for link calculation
 		int link_status[NODE_NUM][NODE_NUM];
@@ -217,7 +212,7 @@ class Trace
 
 //Membership Function
 
-void Trace::initiate() {
+void Trace::initiate() {  //inicializa vetores com valores -1 e 0
 	int i, j, t;
 
 	total_link_change = 0;
@@ -240,14 +235,14 @@ void Trace::initiate() {
 				distances[i][j][t] = 0.0;
 			}
 		}
-	for (i = 0;i < TIME_SLOT + 1; i++)
+	for (i = 0; i < TIME_SLOT + 1; i++)
 		ld_pdf[i] = 0;
 
 	setAngleSpeedArrays();
 }
 
 
-void Trace::setAngleSpeedArrays() {
+void Trace::setAngleSpeedArrays() { //altera valor dos vetores para NIL = -999
 	int id, k;
 	//change the default array value (0 to NIL), since 0 has a meaning for both speed and angle.
 	for (id = 0; id < NODE_NUM; ++id) {
@@ -272,11 +267,11 @@ void Trace::setAngleSpeedArrays() {
 }
 
 
-void Trace::read_trace(char *filename) {
+void Trace::read_trace(char *filename) { //lê arquivo com traços gerados no formato NS-2
 	FILE *trace_fp;
 	int id = 0, t = 0, i = 0;
 
-	char word[20], sentence[100], temp, c0, c1;
+	char word[200], sentence[200], temp, c0, c1;
 	double time, x, y, speed;
 	double x0, y0, z0;
 
@@ -289,7 +284,7 @@ void Trace::read_trace(char *filename) {
 	while (!feof(trace_fp)) {
 		temp = fgetc(trace_fp);
 		if (temp=='#') {	//if the comment is '#', skip it
-			if (fgets(sentence,100,trace_fp) == NULL)
+			if (fgets(sentence,200,trace_fp) == NULL)
 				printf("Wrong format for # comment!\n");
 		} else if (temp=='$') { //if not comment, analyze it
 			//Check the two initial letters
@@ -298,23 +293,23 @@ void Trace::read_trace(char *filename) {
 			if (c0 == 'n' && c1 == 'o')	{
 				for (i = 0; i < 4; i++)
 					temp = fgetc(trace_fp);
-				fscanf(trace_fp, "%d", &id);
+				fscanf(trace_fp, "%d", &id); //id = id do nodo
 				temp = fgetc(trace_fp);
 				fscanf(trace_fp, "%s", word);
 				fscanf(trace_fp, "%s", word);
 
 				if (word[0] == 'X') {
-					fscanf(trace_fp, "%lf", &x0);
+					fscanf(trace_fp, "%lf", &x0); //x0 = posição do nodo no ponto x
 					ini_x[id] = x0;
 					trace[id][t].x = x0;
 				}	else if(word[0]=='Y')	{
-					fscanf(trace_fp, "%lf", &y0);
+					fscanf(trace_fp, "%lf", &y0); //y0 = posição do nodo no ponto y0
 					ini_y[id] = y0;
 					trace[id][t].y = y0;
 				}	else fscanf(trace_fp,"%lf",&z0);
 			// $god_ set-dist 0 1 1677215
 			} else if (c0=='g' && c1=='o') {
-				if (fgets(sentence,100,trace_fp) == NULL)
+				if (fgets(sentence,200,trace_fp) == NULL)
 					printf("Wrong format for $god_ argument!\n");
 			// $ns_ at 30.000000234323 "$node_(1) setdest 534.67642310 435.43899348 43.367834743"
 			// or $ns_ at 344.442322520850 "$god_ set-dist 0 1 7215"
@@ -349,13 +344,13 @@ void Trace::read_trace(char *filename) {
 					if (t==0) { //find the velocity angle and the duration of the first trip
 						trace[id][t].x = ini_x[id];
 						trace[id][t].y = ini_y[id];
-						trace[id][t].angle = get_angle(trace[id][t].x,trace[id][t].y,
-																trace[id][t].next_x,trace[id][t].next_y);
-						trace[id][t].timetodestiny = (int) dist(trace[id][t].x,trace[id][t].y,
-												trace[id][t].next_x,trace[id][t].next_y) / trace[id][t].speed;
+						trace[id][t].angle = get_angle(trace[id][t].x, trace[id][t].y,
+																					 trace[id][t].next_x, trace[id][t].next_y);
+						trace[id][t].timetodestiny = (int) dist(trace[id][t].x, trace[id][t].y,
+																										trace[id][t].next_x, trace[id][t].next_y) / trace[id][t].speed;
 					}
 				}	else if(c0=='g') {
-						if(fgets(sentence,100,trace_fp) == NULL)
+						if(fgets(sentence,200,trace_fp) == NULL)
 							printf("Wrong format for $ns $god_ argument!\n");
 				}
 			}// for "ns","node","god"
@@ -433,7 +428,7 @@ void Trace::set_data() {
 
 				//store the distance between this and the previous waypoint
 				nodeTripLengths[id][tripindex] = dist(waypoints[id][windex].x, waypoints[id][windex].y,
-													waypoints[id][windex - 1].x, waypoints[id][windex - 1].y);
+																							waypoints[id][windex - 1].x, waypoints[id][windex - 1].y);
 
 				//now compute all the distance traveled between this and the previous waypoint
 				nodePathLengths[id][tripindex++] = distanceTraveled(id, waypoints[id][windex - 1].time, waypoints[id][windex].time);
@@ -453,14 +448,12 @@ void Trace::set_data() {
 			t = t_aux;
 		}
 	}
-
 	fillNodesPauseTimes();
 	fillNodesSpeeds();
 	fillNodesAngles();
 	fillDistances();
 	fillNodesTripLengths();
 	fillNodesPathLengths();
-
 }
 
 //all the distance traveled between two time steps (measuring step by step)
@@ -485,41 +478,41 @@ float Trace::distanceTraveled(int id, int t1, int t2) { //t2>t1
 
 //If angle is 0, should this function return 360?
 float Trace::getPositiveAngle(float a) {
-	float angle = (180 * a)/PI;
-	return angle > 0 ? angle : 360 - (-1) * angle;
+	float angle = (180 * a) / PI;
+	return angle > 0 ? angle : 360 - (-1) * angle; //?? 360 + angle?
 }
 
 void Trace::fillNodesPauseTimes() {
-	int aux = 0, k = 0;
-	for (int i = 0; i < NODE_NUM; ++i)
+	int aux = 0, i, k;
+	for (i = 0; i < NODE_NUM; ++i)
 		for (k = 0; nodePauseTimes[i][k] > 0 && aux < NODES_PAUSE_TIME_SLOT; k++)
 			nodesPauseTimes[aux++] = nodePauseTimes[i][k];
 }
 
 void Trace::fillNodesSpeeds() {
-	int aux = 0, k = 0;
-	for (int i = 0; i < NODE_NUM; ++i)
+	int aux = 0, i, k;
+	for (i = 0; i < NODE_NUM; ++i)
 		for (k = 0; nodeSpeeds[i][k] != NIL && aux < NODES_SPEED_SLOT; k++)
 			nodesSpeeds[aux++] = nodeSpeeds[i][k];
 }
 
 void Trace::fillNodesAngles() {
-	int aux = 0, k = 0;
-	for (int i = 0; i < NODE_NUM; ++i)
+	int aux = 0, i, k;
+	for (i = 0; i < NODE_NUM; ++i)
 		for (k = 0; nodeAngles[i][k] != NIL && aux < NODES_ANGLE_SLOT; k++)
 			nodesAngles[aux++] = nodeAngles[i][k];
 }
 
 void Trace::fillNodesTripLengths() {
-	int aux = 0, k = 0;
-	for (int i = 0; i < NODE_NUM; ++i)
+	int aux = 0, i, k;
+	for (i = 0; i < NODE_NUM; ++i)
 		for (k = 0; nodeTripLengths[i][k] != NIL && aux < NODES_TRIP_LENGTH_SLOT; k++)
 			nodesTripLengths[aux++] = nodeTripLengths[i][k];
 }
 
 void Trace::fillNodesPathLengths() {
-	int aux = 0, k = 0;
-	for (int i = 0; i < NODE_NUM; ++i)
+	int aux = 0, i, k;
+	for (i = 0; i < NODE_NUM; ++i)
 		for (k = 0; nodePathLengths[i][k] != NIL && aux < NODES_PATH_LENGTH_SLOT; k++)
 			nodesPathLengths[aux++] = nodePathLengths[i][k];
 }
@@ -652,8 +645,8 @@ void Trace::printSingleTrace(int i, int t) {
 int Trace::start_new_movement(int id, int t) {
 	//starting a new trip: actual x,y should be the previous next_x, next_y
 	if (t > 0) {
-		trace[id][t].x = trace[id][t-1].next_x;
-		trace[id][t].y = trace[id][t-1].next_y;
+		trace[id][t].x = trace[id][t - 1].next_x;
+		trace[id][t].y = trace[id][t - 1].next_y;
 	}
 
 	float distance = dist(trace[id][t].x, trace[id][t].y, trace[id][t].next_x, trace[id][t].next_y);

@@ -1,8 +1,9 @@
 # TraceAnalyzer
 
 After compiling the code, use the following command to make the tool calculates the mobility metrics:
-
+```
 ./TraceAnalyzer &lt;NS2-TRACE-FILE&gt; &lt;NODE-PAUSE-TIME&gt; &lt;RANGE&gt; &lt;WIDTH&gt; &lt;LENGTH&gt;
+```
 
 Where:
 

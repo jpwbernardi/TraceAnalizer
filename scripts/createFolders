@@ -1,0 +1,8 @@
+#!/bin/bash
+mkdir output
+cd output
+mkdir MAN
+cd MAN
+mkdir BonnMotion
+mkdir NS2
+mkdir Statistics

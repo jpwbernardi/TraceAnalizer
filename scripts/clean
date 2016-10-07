@@ -1,0 +1,36 @@
+#!/bin/bash
+
+HOME="/home/uffs/Documents/Research/Joao/TraceAnalyzer/scripts/output"
+cd $HOME
+
+MOBILITY_MODELS=(MAN) #RWP GM RPGM Smooth CMM RD COLUMN RW SLAW)
+MM=1 #10 #LENGTH OF MOBILITY_MODELS
+mm=0
+
+DIRECTORIES=(BonnMotion NS2 Statistics)
+D=3
+d=0
+
+BonnMotion=(.movements) #TODO
+b=1
+NS2=(.ns_movements .ns_movements.gz)
+n=2
+Statistics=(.stats .analyzer)
+s=2
+Final=(.istats .data)
+f=2
+RapidMiner=(.data)
+r=1
+
+#1. Remove all files from each DIRECTORY Create simulation structure of each MM
+for ((mm=0; mm<MM; mm++)); do
+  for ((d=0; d<D; d++)); do
+    cd $HOME/${MOBILITY_MODELS[mm]}/${DIRECTORIES[d]}
+      for ((k=0; k<D; k++)); do
+      	for a in rm *${DIRECTORIES[d]}; do
+	rm *
+    echo "$HOME/${MOBILITY_MODELS[mm]}/${DIRECTORIES[d]}: all files removed."
+  done
+done
+done
+done
