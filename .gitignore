@@ -1,2 +1,3 @@
 *.out
 TraceAnalyzer
+__pycache__/
