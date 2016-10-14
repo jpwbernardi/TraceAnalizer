@@ -1,11 +1,15 @@
-#!/usr/bin/python3.5
-
-#./TraceAnalyzer <NS2-TRACE-FILE> <NODEQTT> <NODE-PAUSE-TIME> <RANGE> <WIDTH> <LENGTH>
-
-import sys
 from decimal import *
 from misc import *
 
+class Point:
+    def __init__(self):
+        self.x = 0; self.y = 0; self.time = 0
+
+    def set(self, x, y, time):
+        self.x = x; self.y = y; self.time = time
+
+    def __repr__(self):
+        return "x: {}\ty: {}\ttime: {}".format(self.x, self.y, self.time)
 
 class Data:
     def __init__(self):
@@ -29,26 +33,20 @@ ini_x = None #List that stores node's original x position
 ini_y = None #List that stores node's original y position
 trace = None #List that stores trace data
 
+NODEQTT = None
+MAX_NUMBER_WAYPOINTS = 50 #Couldn't find why 50, but doesn't seem to change
+TIME_SLOT = 900
 
-def main(tracepath, n, nodepause, r, width, length):
-    initialize(n)
-    #print(ini_x)
-    print("File: {}\nNumber of nodes: {}\nNode pause time: {}\nRange: {}\nWidth: {} \t Length: {}".format(tracepath, n, nodepause, r, width, length));
-    read_trace(tracepath)
-    #print(ini_x)
-    #print(trace)
-    for i in range(0, n):
-        for t in trace[i]:
-            print(trace[i][t])
-
+#Alloc dynamic structures
 def initialize(n): #node quantity
-    global ini_x, ini_y, trace
+    global ini_x, ini_y, trace, NODEQTT
     ini_x = [None] * n
     ini_y = [None] * n
     trace = [{}] * n
+    NODEQTT = n
 
 def read_trace(tracepath):
-    global trace
+    global trace, ini_x, ini_y
     tracefile = open(tracepath, 'r')
     while True:
         char = tracefile.read(1) #Reads 1 character
@@ -59,6 +57,7 @@ def read_trace(tracepath):
             continue
         #char == '$'
         action = tracefile.read(2)
+        #print ("ACTION: " + str(action))
         if action == 'no':
             # $node_(i) set X_ 26.523097872900
             tracefile.read(4) #de_(
@@ -69,28 +68,22 @@ def read_trace(tracepath):
             if axis == "X_":
                 ini_x[id] = getNextDec(tracefile) #x0 = node's position on x axis
                 #trace[id][t].x = x0
-                print("x0: " + str(ini_x[id]))
+                #print("x0: " + str(ini_x[id]))
+
             elif axis == "Y_":
                 ini_y[id] = getNextDec(tracefile) #y0 = node's position on y axis
                 #trace[id][t].y = y0
-                print("y0: " + str(ini_y[id]))
-            else: getNextDec(tracefile) #Will it ever happen?
-        # $god_ set-dist 0 1 1677215
-        elif action == 'go':
-            tracefile.readline()
-            #?? Really?
+                #print("y0: " + str(ini_y[id]))
         # $ns_ at 30.000000234323 "$node_(1) setdest 534.67642310 435.43899348 43.367834743"
-	     #  or $ns_ at 344.442322520850 "$god_ set-dist 0 1 7215"
+	    #  or $ns_ at 344.442322520850 "$god_ set-dist 0 1 7215"
         elif action == 'ns':
-            #_ at
             tracefile.read(4)
             time = getNextWord(tracefile)
             action = tracefile.read(6)
-            print("!!!!!!" + action)
             if action == "\"$node":
                 id = getNextInt(tracefile)
                 getNextWord(tracefile)
-                x = getNextDec(tracefile)
+                x = getNextDec(tracefile) #prox parada, que o nó atingirá após t segundos, não necessáriamente próximo x
                 y = getNextDec(tracefile)
                 speed = getNextDec(tracefile)
                 trace[id][time] = Data()
@@ -98,11 +91,40 @@ def read_trace(tracepath):
 
                 if time == '0.0':
                     trace[id][time].x = ini_x[id]
-                    
+                    trace[id][time].y = ini_y[id]
+                    trace[id][time].angle = get_angle(trace[id][time].x, trace[id][time].y, trace[id][time].nx, trace[id][time].ny)
+                    trace[id][time].timetodestiny = dist(trace[id][time].x, trace[id][time].y, trace[id][time].nx, trace[id][time].ny) / trace[id][time].speed;
+            tracefile.readline() #Reads \n at the end of the line
+        else: #$god_ set-dist 0 1 1677215 ?? Why?
+            tracefile.readline()
+    tracefile.close()
 
-            #tracefile.readline()
+def  set_data():
+    ttd = 0 #??
+    #waypoints: a bidimensional array that stores the visiting points of a node
+    waypoints = [[Point() for x in range(NODEQTT)] for y in range(NODEQTT)]
+    for id in range(NODEQTT):
+        waypoints[id][0].set(trace[id]['0.0'].x, trace[id]['0.0'].y, 0) #Stores time as string, so 0 == 0.0
+        t = 0
+        while node_is_stationary(id, t) and t < TIME_SLOT:
+            update_stationary_state(id, t)
+            t += 1
 
-if __name__ == "__main__":
-    if len(sys.argv) == 7:
-        main(sys.argv[1], int(sys.argv[2]), sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6]);
-    else: print("Wrong number of parameters")
+        pindex = 0 #pause time array index
+        aindex = 0 #velocity angle array index
+        sindex = 0 #speed array index
+        tripindex = 0 #trip length array index
+        windex = 1 #waypoint index
+
+        #t > 0 implies that node has been paused for t seconds
+        #if t > 0:
+        # nodePauseTimes[id][pindex++] = t; T is not a integer. Using string/Decimal to store better precision
+
+
+    #print(waypoints)
+
+
+def print_trace():
+    for i in range(0, NODEQTT):
+        for t in trace[i]:
+            print(trace[i][t])
