@@ -1,5 +1,7 @@
+import collections
 from decimal import *
 from misc import *
+from file import File
 
 class Point:
     def __init__(self):
@@ -26,7 +28,7 @@ class Data:
         self.ny = y; self.speed = speed
 
     def __repr__(self):
-        return "id: {}\ttime: {}\tx: {}\ty: {}\tspeed: {}".format(self.id, self.time, self.x, self.y, self.speed)
+        return "id: {}\ttime: {}\tx: {}\ty: {}\tspeed: {}".format(self.id, self.time, self.nx, self.ny, self.speed)
 
 
 ini_x = None #List that stores node's original x position
@@ -35,19 +37,19 @@ trace = None #List that stores trace data
 
 NODEQTT = None
 MAX_NUMBER_WAYPOINTS = 50 #Couldn't find why 50, but doesn't seem to change
-TIME_SLOT = 900
+TIME_SLOT = 900 #In the trace file, the time range is 0 and 900
 
 #Alloc dynamic structures
 def initialize(n): #node quantity
     global ini_x, ini_y, trace, NODEQTT
     ini_x = [None] * n
     ini_y = [None] * n
-    trace = [{}] * n
+    trace = [None] * n
     NODEQTT = n
 
 def read_trace(tracepath):
     global trace, ini_x, ini_y
-    tracefile = open(tracepath, 'r')
+    tracefile = File(tracepath)
     while True:
         char = tracefile.read(1) #Reads 1 character
         if char == '': #EOF
@@ -61,35 +63,39 @@ def read_trace(tracepath):
         if action == 'no':
             # $node_(i) set X_ 26.523097872900
             tracefile.read(4) #de_(
-            id = getNextInt(tracefile)
+            id = tracefile.getNextInt()
             #print (num)
-            getNextWord(tracefile);
-            axis = getNextWord(tracefile)
+            tracefile.getNextWord();
+            axis = tracefile.getNextWord()
             if axis == "X_":
-                ini_x[id] = getNextDec(tracefile) #x0 = node's position on x axis
+                ini_x[id] = tracefile.getNextDec() #x0 = node's position on x axis
                 #trace[id][t].x = x0
                 #print("x0: " + str(ini_x[id]))
 
             elif axis == "Y_":
-                ini_y[id] = getNextDec(tracefile) #y0 = node's position on y axis
+                ini_y[id] = tracefile.getNextDec() #y0 = node's position on y axis
                 #trace[id][t].y = y0
                 #print("y0: " + str(ini_y[id]))
         # $ns_ at 30.000000234323 "$node_(1) setdest 534.67642310 435.43899348 43.367834743"
 	    #  or $ns_ at 344.442322520850 "$god_ set-dist 0 1 7215"
         elif action == 'ns':
             tracefile.read(4)
-            time = getNextWord(tracefile)
+            time = tracefile.getNextWord() #Comparation between string is easier :P
+            if time == '0.0':
+                time = '0'
             action = tracefile.read(6)
             if action == "\"$node":
-                id = getNextInt(tracefile)
-                getNextWord(tracefile)
-                x = getNextDec(tracefile) #prox parada, que o nó atingirá após t segundos, não necessáriamente próximo x
-                y = getNextDec(tracefile)
-                speed = getNextDec(tracefile)
+                id = tracefile.getNextInt()
+                tracefile.getNextWord()
+                x = tracefile.getNextDec() #prox parada, que o nó atingirá após t segundos, não necessáriamente próximo x
+                y = tracefile.getNextDec()
+                speed = tracefile.getNextDec()
+                if trace[id] == None:
+                    trace[id] = {}
                 trace[id][time] = Data()
                 trace[id][time].set(id, x, y, time, speed)
 
-                if time == '0.0':
+                if time == '0':
                     trace[id][time].x = ini_x[id]
                     trace[id][time].y = ini_y[id]
                     trace[id][time].angle = get_angle(trace[id][time].x, trace[id][time].y, trace[id][time].nx, trace[id][time].ny)
@@ -104,11 +110,11 @@ def  set_data():
     #waypoints: a bidimensional array that stores the visiting points of a node
     waypoints = [[Point() for x in range(NODEQTT)] for y in range(NODEQTT)]
     for id in range(NODEQTT):
-        waypoints[id][0].set(trace[id]['0.0'].x, trace[id]['0.0'].y, 0) #Stores time as string, so 0 == 0.0
-        t = 0
+        waypoints[id][0].set(trace[id]['0'].x, trace[id]['0.0'].y, 0) #Stores time as string, so 0 == 0.0
+
         while node_is_stationary(id, t) and t < TIME_SLOT:
             update_stationary_state(id, t)
-            t += 1
+
 
         pindex = 0 #pause time array index
         aindex = 0 #velocity angle array index
@@ -120,11 +126,13 @@ def  set_data():
         #if t > 0:
         # nodePauseTimes[id][pindex++] = t; T is not a integer. Using string/Decimal to store better precision
 
-
     #print(waypoints)
 
 
 def print_trace():
+    # for i, data in enumerate(data for data in trace):
+    #     print ("OOOOI: " + str(i) + "\n" + str(data) + "\n\n")
     for i in range(0, NODEQTT):
+        #print ("ID CERTO: " + str(i))
         for t in trace[i]:
             print(trace[i][t])

@@ -8,8 +8,8 @@ def main(tracepath, n, nodepause, r, width, length):
     #print(ini_x)
     print("File: {}\nNumber of nodes: {}\nNode pause time: {}\nRange: {}\nWidth: {} \t Length: {}".format(tracepath, n, nodepause, r, width, length));
     read_trace(tracepath)
-    set_data()
-    #print_trace()
+    #set_data()
+    print_trace()
 
 if __name__ == "__main__":
     if len(sys.argv) == 7:
