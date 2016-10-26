@@ -2,6 +2,8 @@ import collections
 from decimal import *
 from misc import *
 from file import File
+from collections import OrderedDict
+
 
 class Point:
     def __init__(self):
@@ -34,8 +36,10 @@ class Data:
 ini_x = None #List that stores node's original x position
 ini_y = None #List that stores node's original y position
 trace = None #List that stores trace data
+nodePauseTimes = None #Keep the values of pause duration of all nodes
 
 NODEQTT = None
+NODE_PAUSE_TIME_SLOT = 50 #Couldn't find why 50, but doesn't seem to change
 MAX_NUMBER_WAYPOINTS = 50 #Couldn't find why 50, but doesn't seem to change
 TIME_SLOT = 900 #In the trace file, the time range is 0 and 900
 
@@ -46,6 +50,7 @@ def initialize(n): #node quantity
     ini_y = [None] * n
     trace = [None] * n
     NODEQTT = n
+    nodePauseTimes = [[None for x in range(NODEQTT)] for y in range(NODE_PAUSE_TIME_SLOT)]
 
 def read_trace(tracepath):
     global trace, ini_x, ini_y
@@ -80,9 +85,8 @@ def read_trace(tracepath):
 	    #  or $ns_ at 344.442322520850 "$god_ set-dist 0 1 7215"
         elif action == 'ns':
             tracefile.read(4)
-            time = tracefile.getNextWord() #Comparation between string is easier :P
-            if time == '0.0':
-                time = '0'
+            time = tracefile.getNextDec() #Comparation between string is easier :P
+            time = int(time)
             action = tracefile.read(6)
             if action == "\"$node":
                 id = tracefile.getNextInt()
@@ -91,11 +95,11 @@ def read_trace(tracepath):
                 y = tracefile.getNextDec()
                 speed = tracefile.getNextDec()
                 if trace[id] == None:
-                    trace[id] = {}
+                    trace[id] = OrderedDict()
                 trace[id][time] = Data()
                 trace[id][time].set(id, x, y, time, speed)
 
-                if time == '0':
+                if time == 0:
                     trace[id][time].x = ini_x[id]
                     trace[id][time].y = ini_y[id]
                     trace[id][time].angle = get_angle(trace[id][time].x, trace[id][time].y, trace[id][time].nx, trace[id][time].ny)
@@ -110,10 +114,11 @@ def  set_data():
     #waypoints: a bidimensional array that stores the visiting points of a node
     waypoints = [[Point() for x in range(NODEQTT)] for y in range(NODEQTT)]
     for id in range(NODEQTT):
-        waypoints[id][0].set(trace[id]['0'].x, trace[id]['0.0'].y, 0) #Stores time as string, so 0 == 0.0
+        waypoints[id][0].set(trace[id][0].x, trace[id][0].y, 0)
 
         while node_is_stationary(id, t) and t < TIME_SLOT:
             update_stationary_state(id, t)
+            t += 1
 
 
         pindex = 0 #pause time array index
@@ -121,10 +126,17 @@ def  set_data():
         sindex = 0 #speed array index
         tripindex = 0 #trip length array index
         windex = 1 #waypoint index
+        paux = 0
 
         #t > 0 implies that node has been paused for t seconds
         #if t > 0:
-        # nodePauseTimes[id][pindex++] = t; T is not a integer. Using string/Decimal to store better precision
+            #nodePauseTimes[id][pindex++] = t;
+
+        # while (t < TIME_SLOT):
+        #     ttd = start_new_movement(id, t);
+        # if (aindex == 0):
+        #     nodeAngles[id][aindex++] = getPositiveAngle(trace[id][t].angle);
+        # elif (t > 0 and not equal_or_almost_equal(trace[id][t].angle, trace[id][t - 1].angle))
 
     #print(waypoints)
 
